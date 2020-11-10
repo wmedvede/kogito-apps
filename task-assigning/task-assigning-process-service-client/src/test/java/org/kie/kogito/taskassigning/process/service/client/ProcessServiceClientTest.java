@@ -26,11 +26,18 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.CLIENT_ID;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.KEYCLOAK_PASSWORD;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.KEYCLOAK_USER;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.KEY_CLOAK_SERVICE_URL;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.REALM;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.SECRET;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.AUTH_PASSWORD;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.AUTH_USER;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.BASIC_AUTH_PROCESS_ID;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.GROUP1;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.GROUP2;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.KEYCLOAK_AUTH_PROCESS_ID;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.PHASE1;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.PHASE2;
 import static org.kie.kogito.taskassigning.process.service.client.WireMockProcessResource.PROCESS_ID;
@@ -42,13 +49,14 @@ import static org.kie.kogito.taskassigning.process.service.client.WireMockProces
 
 @QuarkusTest
 @QuarkusTestResource(WireMockProcessResource.class)
+@QuarkusTestResource(WireMockKeyCloakResource.class)
 public class ProcessServiceClientTest {
 
     @Inject
     ClientServices clientServices;
 
     @Test
-    public void getAvailablePhases() {
+    void getAvailablePhases() {
         ProcessServiceClientConfig config = createServiceConfig();
         ProcessServiceClient client = clientServices.processServiceClientFactory().newClient(config, NoAuthenticationCredentials.INSTANCE);
         Set<String> phases = client.getAvailablePhases(PROCESS_ID,
@@ -62,7 +70,7 @@ public class ProcessServiceClientTest {
     }
 
     @Test
-    public void getAvailablePhasesBasicAuthentication() {
+    void getAvailablePhasesBasicAuthentication() {
         ProcessServiceClientConfig config = createServiceConfig();
         ProcessServiceClient client = clientServices.processServiceClientFactory().newClient(config, new BasicAuthenticationCredentials(AUTH_USER, AUTH_PASSWORD));
         Set<String> phases = client.getAvailablePhases(BASIC_AUTH_PROCESS_ID,
@@ -76,7 +84,29 @@ public class ProcessServiceClientTest {
     }
 
     @Test
-    public void transitionTask() {
+    void getAvailablePhasesWithKeyCloakAuthentication() {
+        ProcessServiceClientConfig config = createServiceConfig();
+        String keyCloakServerUrl = System.getProperty(KEY_CLOAK_SERVICE_URL);
+        KeycloakAuthenticationCredentials credentials = new KeycloakAuthenticationCredentials(keyCloakServerUrl,
+                                                                                              REALM,
+                                                                                              KEYCLOAK_USER,
+                                                                                              KEYCLOAK_PASSWORD,
+                                                                                              CLIENT_ID,
+                                                                                              SECRET);
+
+        ProcessServiceClient client = clientServices.processServiceClientFactory().newClient(config, credentials);
+        Set<String> phases = client.getAvailablePhases(KEYCLOAK_AUTH_PROCESS_ID,
+                                                       PROCESS_INSTANCE_ID,
+                                                       TASK_ID,
+                                                       WORKITEM_ID,
+                                                       USER,
+                                                       Arrays.asList(GROUP1, GROUP2));
+
+        assertThat(phases).containsExactlyInAnyOrder(PHASE2, PHASE1);
+    }
+
+    @Test
+    void transitionTask() {
         ProcessServiceClientConfig config = createServiceConfig();
         ProcessServiceClient client = clientServices.processServiceClientFactory().newClient(config, NoAuthenticationCredentials.INSTANCE);
         client.transitionTask(PROCESS_ID,

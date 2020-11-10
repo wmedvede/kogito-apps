@@ -25,13 +25,16 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.kie.kogito.taskassigning.process.service.client.TestUtil.findFreePort;
+import static org.kie.kogito.taskassigning.process.service.client.WireMockKeyCloakResource.ACCESS_TOKEN;
 
 public class WireMockProcessResource implements QuarkusTestResourceLifecycleManager {
 
@@ -39,6 +42,7 @@ public class WireMockProcessResource implements QuarkusTestResourceLifecycleMana
 
     public static final String PROCESS_ID = "ProcessId";
     public static final String BASIC_AUTH_PROCESS_ID = "BasicAuthProcessId";
+    public static final String KEYCLOAK_AUTH_PROCESS_ID = "KeyCloakAuthProcessId";
 
     public static final String AUTH_USER = "authUser";
     public static final String AUTH_PASSWORD = "authPassword";
@@ -71,6 +75,14 @@ public class WireMockProcessResource implements QuarkusTestResourceLifecycleMana
 
         stubFor(get(buildGetPhasesUrl(BASIC_AUTH_PROCESS_ID))
                         .withBasicAuth(AUTH_USER, AUTH_PASSWORD)
+                        .willReturn(aResponse()
+                                            .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                                            .withBody(getPhasesResponse())
+                        )
+        );
+
+        stubFor(get(buildGetPhasesUrl(KEYCLOAK_AUTH_PROCESS_ID))
+                        .withHeader(AUTHORIZATION, equalTo("Bearer " + ACCESS_TOKEN))
                         .willReturn(aResponse()
                                             .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                                             .withBody(getPhasesResponse())

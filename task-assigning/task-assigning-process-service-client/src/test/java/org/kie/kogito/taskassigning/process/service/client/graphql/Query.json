@@ -1,0 +1,157 @@
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": null
+    },
+    "orderBy": {
+      "state": "DESC",
+      "actualOwner": "DESC",
+      "description": "DESC",
+      "name": "DESC",
+      "priority": "DESC",
+      "processId": "DESC",
+      "completed": "DESC",
+      "started": "DESC",
+      "referenceName": "DESC",
+      "lastUpdate": "DESC"
+    },
+    "pagination": {
+      "limit": 2,
+      "offset": 10
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": null
+    },
+    "orderBy": {
+      "state": "DESC",
+      "actualOwner": "DESC",
+      "description": "DESC",
+      "name": "DESC",
+      "priority": "DESC",
+      "processId": "DESC",
+      "completed": "DESC",
+      "started": "DESC",
+      "referenceName": "DESC",
+      "lastUpdate": null
+    },
+    "pagination": {
+      "limit": 2,
+      "offset": 10
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": null
+    },
+    "orderBy": {
+      "state": "DESC",
+      "actualOwner": "DESC",
+      "description": null,
+      "name": null,
+      "priority": null,
+      "processId": null,
+      "completed": null,
+      "started": null,
+      "referenceName": null,
+      "lastUpdate": null
+    },
+    "pagination": {
+      "limit": 2,
+      "offset": 10
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": null
+    },
+    "orderBy": {},
+    "pagination": {
+      "limit": 2,
+      "offset": 10
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy22, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": null
+    },
+    "orderBy": {},
+    "pagination": {
+      "limit": 2,
+      "offset": 10
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+
+
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": null
+    },
+    "orderBy": {
+      "state": null,
+      "actualOwner": "ASC",
+      "description": null,
+      "name": null,
+      "priority": null,
+      "processId": null,
+      "completed": null,
+      "started": null,
+      "referenceName": null,
+      "lastUpdate": null
+    },
+    "pagination": {
+      "limit": 2,
+      "offset": 10
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+
+{
+  "query": "query { UserTaskInstances(where: {id: null, name: null}, orderBy: {state: null, actualOwner: ASC, description: null, name: null, priority: null, processId: null, completed: null, started: null, referenceName: null, lastUpdate: null}, pagination: {limit: 2, offset: 10}) {id processId name} }"
+}
+

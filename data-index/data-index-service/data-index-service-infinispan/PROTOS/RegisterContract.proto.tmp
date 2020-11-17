@@ -1,0 +1,59 @@
+syntax = "proto2"; 
+package com.myspace.hiring_agency.RegisterContract; 
+import "kogito-index.proto";
+import "kogito-types.proto";
+option kogito_model = "RegisterContract";
+option kogito_id = "RegisterContract";
+
+/* @Indexed */ 
+message Contract { 
+	option java_package = "com.myspace.hiring_agency.RegisterContract";
+	/* @Field(store = Store.YES) */ 
+	optional string contractNumber = 1; 
+	/* @Field(store = Store.YES) */ 
+	optional string employeeNumber = 2; 
+	/* @Field(store = Store.YES) */ 
+	optional string name = 3; 
+	/* @Field(store = Store.YES) */ 
+	optional float salary = 4; 
+	/* @Field(store = Store.YES) */ 
+	optional string surname = 5; 
+	/* @Field(store = Store.YES) */ 
+	optional int32 workingHours = 6; 
+}
+/* @Indexed */ 
+message HiringApplication { 
+	option java_package = "com.myspace.hiring_agency.RegisterContract";
+	/* @Field(store = Store.YES) */ 
+	optional string name = 1; 
+	/* @Field(store = Store.YES) */ 
+	optional string surname = 2; 
+	/* @Field(store = Store.YES) */ 
+	repeated HiringApplicationLine workExperience = 3; 
+}
+/* @Indexed */ 
+message HiringApplicationLine { 
+	option java_package = "com.myspace.hiring_agency.RegisterContract";
+	/* @Field(store = Store.YES) */ 
+	optional string company = 1; 
+	/* @Field(store = Store.YES) */ 
+	optional string position = 2; 
+	/* @Field(store = Store.YES) */ 
+	optional kogito.Date startDate = 3; 
+	/* @Field(store = Store.YES) */ 
+	optional int32 yearsOfExperience = 4; 
+}
+/* @Indexed */ 
+message RegisterContract { 
+	option java_package = "com.myspace.hiring_agency.RegisterContract";
+	/* @Field(store = Store.YES)
+ @VariableInfo(tags="") */ 
+	optional Contract contract = 1; 
+	/* @Field(store = Store.YES)
+ @VariableInfo(tags="") */ 
+	optional HiringApplication hiringApplication = 2; 
+	/* @Field(store = Store.YES) */ 
+	optional string id = 3; 
+	/* @Field(store = Store.YES) */ 
+	optional org.kie.kogito.index.model.KogitoMetadata metadata = 4; 
+}

@@ -29,7 +29,7 @@ public class TestGraphqlClientTest {
     @Test
     void executeQueryByStateAndStartedDateGreaterThan() {
 
-        //queryFactory = new DataIndexQueryFactory();
+        //queryFactory = new DataIndexClientFactory();
         UserTaskInstanceQuery api = queryFactory.newUserTaskInstanceQuery("http://localhost:8180/graphql", "walter", "medvedeo");
 
         FilterByStateAndStarted filterByStateAndStarted = new FilterByStateAndStarted(new InStringArgument(new String[]{"Ready22", "Ready"}),

@@ -6,6 +6,7 @@ public class UserTaskInstance {
     private String processId;
     private String name;
 
+
     public String getId() {
         return id;
     }
@@ -28,5 +29,14 @@ public class UserTaskInstance {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "UserTaskInstance{" +
+                "id='" + id + '\'' +
+                ", processId='" + processId + '\'' +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

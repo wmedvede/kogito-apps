@@ -38,6 +38,7 @@ public class BasicAuthenticationFilter implements AuthenticationFilter {
     public void filter(ClientRequestContext requestContext) throws IOException {
         MultivaluedMap<String, Object> headers = requestContext.getHeaders();
         String token = credentials.getUser() + ":" + credentials.getPassword();
+        System.out.println("Paso por las credentials.");
         String encodedToken = "Basic " + Base64.getEncoder().encodeToString(token.getBytes(StandardCharsets.UTF_8));
         headers.add(HttpHeaders.AUTHORIZATION, encodedToken);
     }

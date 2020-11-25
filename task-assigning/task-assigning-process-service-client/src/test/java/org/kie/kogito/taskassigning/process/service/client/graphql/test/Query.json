@@ -150,36 +150,9 @@
 }
 
 
+
 {
-  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
-  "variables": {
-    "where": {
-      "id": null,
-      "name": {
-        "in": null,
-        "like": null,
-        "isNull": false,
-        "equal": null
-      }
-    },
-    "orderBy": {
-      "state": null,
-      "actualOwner": "ASC",
-      "description": null,
-      "name": null,
-      "priority": null,
-      "processId": null,
-      "completed": null,
-      "started": null,
-      "referenceName": null,
-      "lastUpdate": null
-    },
-    "pagination": {
-      "limit": 2,
-      "offset": 0
-    }
-  },
-  "operationName": "UserTaskInstances"
+  "query": "query { UserTaskInstances(where: {id: null, name: null}, orderBy: {state: null, actualOwner: ASC, description: null, name: null, priority: null, processId: null, completed: null, started: null, referenceName: null, lastUpdate: null}, pagination: {limit: 2, offset: 10}) {id processId name} }"
 }
 
 
@@ -191,9 +164,9 @@
       "name": {
         "in": null,
         "like": null,
-        "isNull": false,
-        "equal": null
-      }
+        "equal": "CompleteInfo"
+      },
+      "and": null
     },
     "orderBy": {
       "state": "DESC",
@@ -220,18 +193,19 @@
   "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
   "variables": {
     "where": {
-      "state": {
-        "in": [
-          "Ready",
-          "Modifiyed"
-        ]
-      }
+      "id": null,
+      "name": {
+        "in": null,
+        "like": null,
+        "equal": "CompleteInfo"
+      },
+      "and": null
     },
     "orderBy": {
-      "state": "DESC"
+      "name": "ASC"
     },
     "pagination": {
-      "limit": 20,
+      "limit": 2,
       "offset": 0
     }
   },
@@ -243,11 +217,35 @@
   "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
   "variables": {
     "where": {
-      "state": {
-        "in": [
-          "Ready",
-          "Modifiyed"
-        ]
+      "id": null,
+      "name": {
+        "in": null,
+        "like": null,
+        "equal": "CompleteInfo"
+      },
+      "and": null
+    },
+    "orderBy": {
+      "name": "ASC"
+    },
+    "pagination": {
+      "limit": 2,
+      "offset": 0
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "id": null,
+      "name": {
+        "in": null,
+        "like": null,
+        "equal": "CompleteInfo"
       },
       "and": null
     },
@@ -255,73 +253,7 @@
       "state": "DESC"
     },
     "pagination": {
-      "limit": 20,
-      "offset": 0
-    }
-  },
-  "operationName": "UserTaskInstances",
-
-}
-
-
-
-{
-  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
-  "variables": {
-    "where": {
-      "state": {
-        "in": [
-          "Ready",
-          "Modifiyed"
-        ]
-      },
-      "and": [
-        {
-          "state": {
-            "in": [
-              "OOO",
-              "PAA"
-            ]
-          },
-          "and": null
-        }
-      ]
-    },
-    "orderBy": {
-      "state": "DESC"
-    },
-    "pagination": {
-      "limit": 20,
-      "offset": 0
-    }
-  },
-  "operationName": "UserTaskInstances"
-}
-
-
-{
-  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
-  "variables": {
-    "where": {
-      "state": {
-        "in": [
-          "Ready",
-          "Modifiyed"
-        ]
-      },
-      "and": [
-        {
-          "started": {
-            "greaterThan": "AAAAA"
-          }
-        }
-      ]
-    },
-    "orderBy": {
-      "state": "DESC"
-    },
-    "pagination": {
-      "limit": 20,
+      "limit": 2,
       "offset": 0
     }
   },
@@ -371,7 +303,7 @@
       },
       "and": [
         {
-          "started": "org.kie.kogito.taskassigning.process.service.client.graphql.GreaterThanDateArgument@3fc08eec"
+          "started": "org.kie.kogito.taskassigning.process.service.client.graphql.GreaterThanDateArgument@4201a617"
         }
       ]
     },
@@ -385,3 +317,67 @@
   },
   "operationName": "UserTaskInstances"
 }
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgumentInput, $orderBy: UserTaskInstanceOrderByInput, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "state": {
+        "in": [
+          "Ready",
+          "Modifiyed"
+        ]
+      },
+      "and": [
+        {
+          "name": {
+            "in": [
+              "CompleteInfo"
+            ]
+          }
+        }
+      ]
+    },
+    "orderBy": {
+      "started": "ASC"
+    },
+    "pagination": {
+      "limit": 20,
+      "offset": 0
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "state": {
+        "in": [
+          "Completed",
+          "Ready"
+        ]
+      },
+      "and": [
+        {
+          "started": {
+            "greaterThan": "2020-11-19T09:04:09.519Z"
+          }
+        }
+      ]
+    },
+    "orderBy": {
+      "started": "ASC"
+    },
+    "pagination": {
+      "limit": 20,
+      "offset": 0
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+

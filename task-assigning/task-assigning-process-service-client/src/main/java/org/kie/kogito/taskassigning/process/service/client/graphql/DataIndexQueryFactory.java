@@ -16,8 +16,7 @@ public class DataIndexQueryFactory {
         //CDI proxying
     }
 
-    public DataIndexAPI newDataIndexAPI(String url, String user, String password) {
-
+    public UserTaskInstanceQuery newUserTaskInstanceQuery(String url, String user, String password) {
         GraphQlClientBuilderImpl builder = (GraphQlClientBuilderImpl) GraphQlClientBuilder.newBuilder();
         MpClientBuilderImpl mpClientBuilder = new MpClientBuilderImpl();
 
@@ -29,6 +28,6 @@ public class DataIndexQueryFactory {
         builder.client(client);
 
         return builder.endpoint(url)
-                .build(DataIndexAPI.class);
+                .build(UserTaskInstanceQuery.class);
     }
 }

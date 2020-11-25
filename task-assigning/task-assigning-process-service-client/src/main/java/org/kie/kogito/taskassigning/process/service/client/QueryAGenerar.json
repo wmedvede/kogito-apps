@@ -1,0 +1,54 @@
+//al final se reduce a crear este json.
+
+Las partes variables serian:
+
+1) el where
+  que basicamente hay que meterle un JSON al JSON, o sea que el tempalte se crearia con ese valor vacio
+2) el orderBy
+3) el pagination
+
+
+1) la query la leo de un resource
+   donde basicamente es todo lo de abajo
+   pero con
+
+"variables": {
+    "where": null,
+    "orderBy": null,
+    "pagination": null
+}
+
+
+
+{
+  "query": "query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }",
+  "variables": {
+    "where": {
+      "state": {
+        "in": [
+          "Ready22",
+          "Ready"
+        ]
+      },
+      "and": [
+        {
+          "started": {
+            "greaterThan": "2020-11-19T09:04:09.519Z"
+          }
+        }
+      ]
+    },
+    "orderBy": {
+      "started": "ASC"
+    },
+    "pagination": {
+      "limit": 20,
+      "offset": 0
+    }
+  },
+  "operationName": "UserTaskInstances"
+}
+
+
+
+    {"query":"query UserTaskInstances($where: UserTaskInstanceArgument, $orderBy: UserTaskInstanceOrderBy, $pagination: Pagination) { UserTaskInstances(where: $where, orderBy: $orderBy, pagination: $pagination) {id processId name} }","variables":{"where":{"state":{"in":["Ready22","Ready"]},"and":[{"started":{"greaterThan":"2020-11-19T09:04:09.519Z"}}]},"orderBy":{"started":"ASC"},"pagination":{"limit":20,"offset":0}},"operationName":"UserTaskInstances"}

@@ -39,6 +39,7 @@ import static org.kie.kogito.taskassigning.core.model.TaskAssignment.START_TIME_
  */
 
 // workaround for https://issues.redhat.com/browse/PLANNER-2308
+// TODO evaluate removing whe the issue is sorted out.
 @RegisterForReflection
 public class StartAndEndTimeUpdatingVariableListener implements VariableListener<TaskAssigningSolution, TaskAssignment> {
 

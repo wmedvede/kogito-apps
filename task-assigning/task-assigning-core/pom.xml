@@ -17,24 +17,15 @@
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <!-- this exclusion can be also moved the task-assigning-service for keeping the task-assigning-core
-               completely decoupled from quarkus-->
-          <groupId>org.kie.kogito</groupId>
-          <artifactId>drools-core-dynamic</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
-      <!-- required only for being able to use the @RegisterForReflection -->
+      <!-- at the moment this dependency was added only for being able to use the @RegisterForReflection
+           in the StartAndEndTimeUpdatingVariableListener.
+           TODO: evaluate removing it after https://issues.redhat.com/browse/PLANNER-2308 is sorted out.
+      -->
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-core</artifactId>
     </dependency>
-
-    <!-- TODO acordarse que o bien acá o bien en el task-assigning service hay que agregar una exclusion
-    all logback-default, sino pasa que el slf agarra dos loggers, el logback default y el que usa quarkus.
-    -->
 
     <!-- test dependencies -->
 
@@ -46,6 +37,12 @@
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-examples</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-classic</artifactId>
+        </exclusion>
+      </exclusions>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -86,6 +83,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludedGroups>turtleTest,developmentOnlyTest</excludedGroups>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>

@@ -38,6 +38,7 @@ import static org.kie.kogito.taskassigning.core.model.TaskAssignment.START_TIME_
  * accordingly.
  */
 
+// workaround for https://issues.redhat.com/browse/PLANNER-2308
 @RegisterForReflection
 public class StartAndEndTimeUpdatingVariableListener implements VariableListener<TaskAssigningSolution, TaskAssignment> {
 
@@ -78,7 +79,7 @@ public class StartAndEndTimeUpdatingVariableListener implements VariableListener
     private static void updateStartAndEndTime(final ScoreDirector<TaskAssigningSolution> scoreDirector, final TaskAssignment sourceTaskAssignment) {
         ChainElement previous = sourceTaskAssignment.getPreviousElement();
         TaskAssignment shadowTaskAssignment = sourceTaskAssignment;
-        Integer previousEndTime = previous == null || !previous.isTaskAssignment() ? 0 : ((TaskAssignment)previous).getEndTimeInMinutes();
+        Integer previousEndTime = previous == null || !previous.isTaskAssignment() ? 0 : ((TaskAssignment) previous).getEndTimeInMinutes();
         Integer startTime = previousEndTime;
         Integer endTime = calculateEndTime(shadowTaskAssignment, startTime);
         while (shadowTaskAssignment != null && !Objects.equals(shadowTaskAssignment.getStartTimeInMinutes(), startTime)) {

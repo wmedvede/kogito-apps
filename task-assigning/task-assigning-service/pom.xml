@@ -33,11 +33,6 @@
 
     <dependency>
       <groupId>org.optaplanner</groupId>
-      <artifactId>optaplanner-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-quarkus</artifactId>
     </dependency>
 
@@ -48,12 +43,11 @@
       <version>2.0.0-SNAPSHOT</version>
     </dependency>
 
-
     <!--<dependency>-->
-      <!--<groupId>org.kie.kogito</groupId>-->
-      <!--<artifactId>task-assigning-process-service-client</artifactId>-->
-      <!--&lt;!&ndash; TODO, this dependency must go in the kogito-bom in the kogito-runtimes project &ndash;&gt;-->
-      <!--<version>2.0.0-SNAPSHOT</version>-->
+    <!--<groupId>org.kie.kogito</groupId>-->
+    <!--<artifactId>task-assigning-process-service-client</artifactId>-->
+    <!--&lt;!&ndash; TODO, this dependency must go in the kogito-bom in the kogito-runtimes project &ndash;&gt;-->
+    <!--<version>2.0.0-SNAPSHOT</version>-->
     <!--</dependency>-->
 
   </dependencies>
@@ -117,7 +111,6 @@
       </build>
       <properties>
         <quarkus.package.type>native</quarkus.package.type>
-        <quarkus.native.additional-build-args> --report-unsupported-elements-at-runtime</quarkus.native.additional-build-args>
       </properties>
     </profile>
   </profiles>

@@ -16,40 +16,35 @@
 
 package org.kie.kogito.taskassigning.service;
 
-import java.util.ArrayList;
-
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 
-import org.kie.kogito.taskassigning.core.model.Task;
+import io.quarkus.runtime.Startup;
 import org.kie.kogito.taskassigning.core.model.TaskAssigningSolution;
-import org.kie.kogito.taskassigning.core.model.TaskAssignment;
 import org.optaplanner.core.api.solver.SolverFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.kie.kogito.taskassigning.core.model.ModelConstants.PLANNING_USER;
-
-@Path("/task-assigning")
 @ApplicationScoped
+@Startup
 public class TaskAssigningService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskAssigningService.class);
 
     @Inject
     SolverFactory<TaskAssigningSolution> solverFactory;
 
-    @GET
-    @Path("/executeSolver")
-    @Produces({"application/json"})
-    public String executeSolver() {
-        System.out.println("Starting solver execution");
+    @PostConstruct
+    void start() {
+        LOGGER.error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+        checkSolverConfig();
 
-        TaskAssigningSolution solution = new TaskAssigningSolution("1", new ArrayList<>(), new ArrayList<>());
-        solution.getUserList().add(PLANNING_USER);
-        solution.getTaskAssignmentList().add(new TaskAssignment(Task.newBuilder().id("Task1").build()));
-        solution.getTaskAssignmentList().add(new TaskAssignment(Task.newBuilder().id("Task2").build()));
-        TaskAssigningSolution result = solverFactory.buildSolver().solve(solution);
-        System.out.println("All Good!");
-        return "Success!";
     }
+
+    void checkSolverConfig() {
+        LOGGER.debug("Checking solver configuration!");
+        solverFactory.buildSolver();
+    }
+
 }

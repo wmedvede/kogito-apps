@@ -19,6 +19,7 @@ package org.kie.kogito.taskassigning.messaging;
 import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -33,16 +34,21 @@ public class ReactiveMessagingEventConsumer {
 
     private static final String KOGITO_USERTASKINSTANCES_EVENTS = "kogito-usertaskinstances-events";
 
+    @Inject
+    UserTaskEventConsumer consumer;
+
+    private static int[] eventIds = {1};
+
     @Incoming(KOGITO_USERTASKINSTANCES_EVENTS)
     @Acknowledgment(Acknowledgment.Strategy.MANUAL)
     public CompletionStage<Void> onUserTaskEvent(Message<UserTaskEvent> message) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("UserTaskEvent instance received: {}", message.getPayload());
-        }
-        handleEvent(message.getPayload());
-        return message.ack();
+        //TODO this id is set just for debuging
+        message.getPayload().setId("" + eventIds[0]++);
+        LOGGER.debug("Kafka Event has arrived, eventId: " + message.getPayload().getId());
+        return consumer.consume(message);
     }
 
+    //TODO remove this method
     void handleEvent(UserTaskEvent event) {
         //TODO, this part of the code will be implemented in upcoming iteration
         //when we do the real processing of the event e.g. feed the solver with the just arrived task, etc.

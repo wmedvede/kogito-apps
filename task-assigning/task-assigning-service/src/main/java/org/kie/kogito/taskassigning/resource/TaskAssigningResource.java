@@ -21,12 +21,17 @@ import java.util.ArrayList;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.kie.kogito.taskassigning.core.model.Task;
 import org.kie.kogito.taskassigning.core.model.TaskAssigningSolution;
 import org.kie.kogito.taskassigning.core.model.TaskAssignment;
+import org.kie.kogito.taskassigning.messaging.MyKafkaConsumerRebalanceListener;
+import org.kie.kogito.taskassigning.service.TaskAssigningService;
 import org.optaplanner.core.api.solver.SolverFactory;
 
 import static org.kie.kogito.taskassigning.core.model.ModelConstants.PLANNING_USER;
@@ -37,6 +42,16 @@ public class TaskAssigningResource {
 
     @Inject
     SolverFactory<TaskAssigningSolution> solverFactory;
+
+    @Inject
+    TaskAssigningService service;
+
+    @Inject
+    @RestClient
+    CheckConcurrencyClient checkConcurrencyClient;
+
+    @Inject
+    MyKafkaConsumerRebalanceListener listener;
 
     @GET
     @Path("/executeSolver")
@@ -50,6 +65,37 @@ public class TaskAssigningResource {
         solution.getTaskAssignmentList().add(new TaskAssignment(Task.newBuilder().id("Task2").build()));
         TaskAssigningSolution result = solverFactory.buildSolver().solve(solution);
         System.out.println("All Good!");
-        return "Success!";
+        return "{\"result\": \"Success!\"}";
+    }
+
+    @POST
+    @Path("/startEvents")
+    @Produces({"application/json"})
+    public String startEvents() {
+        service.startEvents();
+        //listener.resume();
+        return "{\"result\": \"Events Started!\"}";
+    }
+
+    @POST
+    @Path("/pauseEvents")
+    @Produces({"application/json"})
+    public String pauseEvents() {
+        service.pauseEvents();
+        //listener.pause();
+        return "{\"result\": \"Events Paused!\"}";
+    }
+
+    @POST
+    @Path("/createProcessInstances")
+    @Produces({"application/json"})
+    public void createProcessInstances(@QueryParam("instances") int instances) {
+        for (int i= 0; i < instances; i++) {
+
+            checkConcurrencyClient.newProcessInstance("process_" + System.currentTimeMillis(),
+                                                      "{}");
+
+        }
+
     }
 }

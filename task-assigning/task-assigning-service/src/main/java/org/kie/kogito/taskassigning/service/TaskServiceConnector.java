@@ -28,14 +28,10 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.kie.kogito.taskassigning.ClientServices;
-import org.kie.kogito.taskassigning.auth.AuthenticationCredentials;
-import org.kie.kogito.taskassigning.auth.BasicAuthenticationCredentials;
-import org.kie.kogito.taskassigning.auth.KeycloakAuthenticationCredentials;
-import org.kie.kogito.taskassigning.auth.NoAuthenticationCredentials;
 import org.kie.kogito.taskassigning.index.service.client.DataIndexServiceClient;
-import org.kie.kogito.taskassigning.index.service.client.DataIndexServiceClientConfig;
 import org.kie.kogito.taskassigning.index.service.client.graphql.UserTaskInstance;
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfig;
+import org.kie.kogito.taskassigning.service.config.TaskAssigningConfigUtil;
 
 @ApplicationScoped
 public class TaskServiceConnector {
@@ -91,33 +87,9 @@ public class TaskServiceConnector {
                 collect(Collectors.toList());
     }
 
-    //TODO esto se puede ir a otra clase
     private DataIndexServiceClient ensureServiceClient() {
         if (indexServiceClient == null) {
-            DataIndexServiceClientConfig clientServiceConfig = DataIndexServiceClientConfig.newBuilder()
-                    .serviceUrl(config.getDataIndexServerUrl().toString())
-                    .build();
-
-            AuthenticationCredentials credentials;
-            if (config.isDataIndexKeycloakSet()) {
-                //TODO ver como mierda mejoro esto de la validacion de mierda.
-                credentials = KeycloakAuthenticationCredentials.newBuilder()
-                        .serverUrl(config.getDataIndexServerUrl().toString())
-                        .realm(config.getDataIndexClientKeycloakAuthRealm().orElse(null))
-                        .clientId(config.getDataIndexClientKeycloakAuthClientId().orElse(null))
-                        .clientSecret(config.getDataIndexClientKeycloakAuthSecret().orElse(null))
-                        .username(config.getDataIndexClientKeycloakAuthUser().orElse(null))
-                        .password(config.getDataIndexClientKeycloakAuthPassword().orElse(null))
-                        .build();
-            } else if (config.isDataIndexBasicAuthSet()) {
-                credentials = BasicAuthenticationCredentials.newBuilder()
-                        .user(config.getDataIndexClientBasicAuthUser().orElse(null))
-                        .password(config.getDataIndexClientBasicAuthPassword().orElse(null))
-                        .build();
-            } else {
-                credentials = NoAuthenticationCredentials.INSTANCE;
-            }
-            indexServiceClient = clientServices.dataIndexClientFactory().newClient(clientServiceConfig, credentials);
+            indexServiceClient = TaskAssigningConfigUtil.createDataIndexServiceClient(clientServices, config);
         }
         return indexServiceClient;
     }

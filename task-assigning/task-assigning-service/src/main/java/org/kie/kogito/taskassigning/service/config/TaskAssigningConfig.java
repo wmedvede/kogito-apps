@@ -16,130 +16,136 @@
 
 package org.kie.kogito.taskassigning.service.config;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_BASIC_AUTH_PASSWORD;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_BASIC_AUTH_USER;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_KEYCLOAK_AUTH_CLIENT_ID;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_KEYCLOAK_AUTH_PASSWORD;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_KEYCLOAK_AUTH_REALM;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_KEYCLOAK_AUTH_SECRET;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_KEYCLOAK_AUTH_SERVER_URL;
-import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_CLIENT_KEYCLOAK_AUTH_USER;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.CLIENT_AUTH_PASSWORD;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.CLIENT_AUTH_USER;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.DATA_INDEX_SERVER_URL;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_AUTH_SERVER_URL;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_CLIENT_ID;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_CREDENTIALS_SECRET;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_TENANT_ENABLED;
 
 @ApplicationScoped
 public class TaskAssigningConfig {
+
+    private static final String KEYCLOAK_REALMS_SUB_PATH = "/realms/";
+    private static final String KEYCLOAK_AUTH_REALMS_SUB_PATH = "/auth/realms/";
+    private static final String KEYCLOAK_SERVER_URL_UNEXPECTED_FORMAT_ERROR = "The configuration value for property: " + QUARKUS_OIDC_AUTH_SERVER_URL +
+            ", %s doesn't look to be a valid Keycloak authentication domain configuration in the form " +
+            "\'https://host:port/auth/realms/{realm}\' where '{realm}' has to be replaced by the name of the Keycloak realm.";
+
+    @Inject
+    @ConfigProperty(name = QUARKUS_OIDC_TENANT_ENABLED)
+    boolean oidcTenantEnabled;
+
+    @Inject
+    @ConfigProperty(name = QUARKUS_OIDC_AUTH_SERVER_URL)
+    Optional<URL> oidcAuthServerUrl;
+
+    @Inject
+    @ConfigProperty(name = QUARKUS_OIDC_CLIENT_ID)
+    Optional<String> oidcClientId;
+
+    @Inject
+    @ConfigProperty(name = QUARKUS_OIDC_CREDENTIALS_SECRET)
+    Optional<String> oidcCredentialsSecret;
+
+    @Inject
+    @ConfigProperty(name = CLIENT_AUTH_USER)
+    Optional<String> clientAuthUser;
+
+    @Inject
+    @ConfigProperty(name = CLIENT_AUTH_PASSWORD)
+    Optional<String> clientAuthPassword;
 
     @Inject
     @ConfigProperty(name = DATA_INDEX_SERVER_URL)
     URL dataIndexServerUrl;
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_BASIC_AUTH_USER)
-    Optional<String> dataIndexClientBasicAuthUser;
+    public boolean isOidcTenantEnabled() {
+        return oidcTenantEnabled;
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_BASIC_AUTH_PASSWORD)
-    Optional<String> dataIndexClientBasicAuthPassword;
+    public Optional<URL> getOidcAuthServerUrl() {
+        return oidcAuthServerUrl;
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_KEYCLOAK_AUTH_SERVER_URL)
-    Optional<URL> dataIndexClientKeycloakAuthServerUrl;
+    public URL getOidcAuthServerCanonicUrl() {
+        String oidcAuthServerUrlString = getOidcAuthServerUrlString();
+        String[] splittedValues = getOidcAuthServerUrlString().split(KEYCLOAK_REALMS_SUB_PATH);
+        if (splittedValues.length != 2 || splittedValues[1] == null || splittedValues[1].isEmpty() || splittedValues[1].contains("/")) {
+            throw new IllegalArgumentException(String.format(KEYCLOAK_SERVER_URL_UNEXPECTED_FORMAT_ERROR, oidcAuthServerUrlString));
+        }
+        try {
+            return new URL(splittedValues[0]);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(String.format(KEYCLOAK_SERVER_URL_UNEXPECTED_FORMAT_ERROR, oidcAuthServerUrlString));
+        }
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_KEYCLOAK_AUTH_REALM)
-    Optional<String> dataIndexClientKeycloakAuthRealm;
+    public String getOidcAuthServerRealm() {
+        String oidcAuthServerUrlString = getOidcAuthServerUrlString();
+        String[] splittedValues = getOidcAuthServerUrlString().split(KEYCLOAK_AUTH_REALMS_SUB_PATH);
+        if (splittedValues.length != 2 || splittedValues[1] == null || splittedValues[1].contains("/")
+                || splittedValues[0] == null || splittedValues[0].isEmpty()) {
+            throw new IllegalArgumentException(String.format(KEYCLOAK_SERVER_URL_UNEXPECTED_FORMAT_ERROR, oidcAuthServerUrlString));
+        }
+        return splittedValues[1];
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_KEYCLOAK_AUTH_CLIENT_ID)
-    Optional<String> dataIndexClientKeycloakAuthClientId;
+    private String getOidcAuthServerUrlString() {
+        return getOidcAuthServerUrl()
+                .orElseThrow(() -> new IllegalArgumentException("A configuration value must be set for the property: "
+                                                                        + QUARKUS_OIDC_AUTH_SERVER_URL))
+                .toString();
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_KEYCLOAK_AUTH_SECRET)
-    Optional<String> dataIndexClientKeycloakAuthSecret;
+    public Optional<String> getOidcClientId() {
+        return oidcClientId;
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_KEYCLOAK_AUTH_USER)
-    Optional<String> dataIndexClientKeycloakAuthUser;
+    public Optional<String> getOidcCredentialsSecret() {
+        return oidcCredentialsSecret;
+    }
 
-    @Inject
-    @ConfigProperty(name = DATA_INDEX_CLIENT_KEYCLOAK_AUTH_PASSWORD)
-    Optional<String> dataIndexClientKeycloakAuthPassword;
+    public Optional<String> getClientAuthUser() {
+        return clientAuthUser;
+    }
+
+    public Optional<String> getClientAuthPassword() {
+        return clientAuthPassword;
+    }
 
     public URL getDataIndexServerUrl() {
         return dataIndexServerUrl;
     }
 
-    public Optional<String> getDataIndexClientBasicAuthUser() {
-        return dataIndexClientBasicAuthUser;
+    public boolean isKeycloakSet() {
+        return isOidcTenantEnabled();
     }
 
-    public Optional<String> getDataIndexClientBasicAuthPassword() {
-        return dataIndexClientBasicAuthPassword;
-    }
-
-    public Optional<URL> getDataIndexClientKeycloakAuthServerUrl() {
-        return dataIndexClientKeycloakAuthServerUrl;
-    }
-
-    public Optional<String> getDataIndexClientKeycloakAuthRealm() {
-        return dataIndexClientKeycloakAuthRealm;
-    }
-
-    public Optional<String> getDataIndexClientKeycloakAuthClientId() {
-        return dataIndexClientKeycloakAuthClientId;
-    }
-
-    public Optional<String> getDataIndexClientKeycloakAuthSecret() {
-        return dataIndexClientKeycloakAuthSecret;
-    }
-
-    public Optional<String> getDataIndexClientKeycloakAuthUser() {
-        return dataIndexClientKeycloakAuthUser;
-    }
-
-    public Optional<String> getDataIndexClientKeycloakAuthPassword() {
-        return dataIndexClientKeycloakAuthPassword;
-    }
-
-    public boolean isDataIndexKeycloakSet() {
-        return isAnyOptionalSet(getDataIndexClientKeycloakAuthServerUrl(),
-                                getDataIndexClientKeycloakAuthRealm(),
-                                getDataIndexClientKeycloakAuthClientId(),
-                                getDataIndexClientKeycloakAuthSecret(),
-                                getDataIndexClientKeycloakAuthUser(),
-                                getDataIndexClientKeycloakAuthPassword());
-    }
-
-    public boolean isDataIndexBasicAuthSet() {
-        return isAnyOptionalSet(getDataIndexClientBasicAuthUser(),
-                                getDataIndexClientBasicAuthPassword());
+    public boolean isBasicAuthSet() {
+        return !isKeycloakSet() && clientAuthUser != null && clientAuthUser.isPresent();
     }
 
     @Override
     public String toString() {
         return "TaskAssigningConfig{" +
-                "dataIndexServerUrl=" + dataIndexServerUrl +
-                ", dataIndexClientBasicAuthUser=" + dataIndexClientBasicAuthUser +
-                ", dataIndexClientBasicAuthPassword=" + dataIndexClientBasicAuthPassword +
-                ", dataIndexClientKeycloakAuthServerUrl=" + dataIndexClientKeycloakAuthServerUrl +
-                ", dataIndexClientKeycloakAuthServerRealm=" + dataIndexClientKeycloakAuthRealm +
-                ", dataIndexClientKeycloakAuthClientId=" + dataIndexClientKeycloakAuthClientId +
-                ", dataIndexClientKeycloakAuthSecret=" + dataIndexClientKeycloakAuthSecret +
-                ", dataIndexClientKeycloakAuthUser=" + dataIndexClientKeycloakAuthUser +
-                ", dataIndexClientKeycloakAuthPassword=" + dataIndexClientKeycloakAuthPassword +
+                "oidcTenantEnabled=" + oidcTenantEnabled +
+                ", oidcAuthServerUrl=" + oidcAuthServerUrl +
+                ", oidcClientId=" + oidcClientId +
+                ", oidcCredentialsSecret=" + (oidcCredentialsSecret.isEmpty() ? null : "*****") +
+                ", clientAuthUser=" + clientAuthUser +
+                ", clientAuthPassword=" + (clientAuthPassword.isEmpty() ? null : "*****") +
+                ", dataIndexServerUrl=" + dataIndexServerUrl +
                 '}';
-    }
-
-    private static boolean isAnyOptionalSet(Optional<?>... optionals) {
-        return Stream.of(optionals).anyMatch(Optional::isPresent);
     }
 }

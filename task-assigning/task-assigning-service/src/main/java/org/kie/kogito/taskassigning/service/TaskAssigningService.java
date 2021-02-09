@@ -108,11 +108,14 @@ public class TaskAssigningService {
 
     @PreDestroy
     void destroy() {
-        System.out.println("Destroy, NOS VAMOOOOOO!");
-        solverExecutor.destroy();
-
-        LOGGER.debug("el task loader ya esta destruido: {}", solutionDataLoader.isDestroyed());
-        solutionDataLoader.destroy();
+        try {
+            LOGGER.info("Service is going down and will be destroyed.");
+            solverExecutor.destroy();
+            solutionDataLoader.destroy();
+            LOGGER.info("Service destroy sequence was executed successfully.");
+        } catch (Throwable e) {
+            LOGGER.error("An error was produced during service destroy, but it'll go down anyway.", e);
+        }
     }
 
     public void startEvents() {

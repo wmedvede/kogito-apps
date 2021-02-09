@@ -23,22 +23,17 @@ public class TaskAssigningConfigProperties {
 
     public static final String TASK_ASSIGNING_PROPERTY_PREFIX = "kogito.task-assigning";
 
+    public static final String QUARKUS_OIDC_TENANT_ENABLED = "quarkus.oidc.tenant-enabled";
+
+    public static final String QUARKUS_OIDC_AUTH_SERVER_URL = "quarkus.oidc.auth-server-url";
+
+    public static final String QUARKUS_OIDC_CLIENT_ID = "quarkus.oidc.client-id";
+
+    public static final String QUARKUS_OIDC_CREDENTIALS_SECRET = "quarkus.oidc.credentials.secret";
+
+    public static final String CLIENT_AUTH_USER = TASK_ASSIGNING_PROPERTY_PREFIX + ".user";
+
+    public static final String CLIENT_AUTH_PASSWORD = TASK_ASSIGNING_PROPERTY_PREFIX + ".password";
+
     public static final String DATA_INDEX_SERVER_URL = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.server-url";
-
-    public static final String DATA_INDEX_CLIENT_BASIC_AUTH_USER = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.basic.user";
-
-    public static final String DATA_INDEX_CLIENT_BASIC_AUTH_PASSWORD = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.basic.password";
-
-    public static final String DATA_INDEX_CLIENT_KEYCLOAK_AUTH_SERVER_URL = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.keycloak.auth-server-url";
-
-    public static final String DATA_INDEX_CLIENT_KEYCLOAK_AUTH_REALM = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.keycloak.realm";
-
-    public static final String DATA_INDEX_CLIENT_KEYCLOAK_AUTH_CLIENT_ID = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.keycloak.client-id";
-
-    public static final String DATA_INDEX_CLIENT_KEYCLOAK_AUTH_SECRET = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.keycloak.credentials.secret";
-
-    public static final String DATA_INDEX_CLIENT_KEYCLOAK_AUTH_USER = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.keycloak.user";
-
-    public static final String DATA_INDEX_CLIENT_KEYCLOAK_AUTH_PASSWORD = TASK_ASSIGNING_PROPERTY_PREFIX + ".data-index.client.auth.keycloak.password";
-
 }

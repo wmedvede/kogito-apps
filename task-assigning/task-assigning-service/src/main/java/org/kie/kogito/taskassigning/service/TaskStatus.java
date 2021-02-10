@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.user.service;
+package org.kie.kogito.taskassigning.service;
 
-import java.util.Map;
-import java.util.Set;
+public enum TaskStatus {
+    READY("Ready"),
+    RESERVED("Reserved");
 
-public interface User {
+    private String value;
 
-    String getId();
+    TaskStatus(String value) {
+        this.value = value;
+    }
 
-    Set<Group> getGroups();
+    public String value() {
+        return value;
+    }
 
-    Map<String, Object> getAttributes();
-
+    @Override
+    public String toString() {
+        return value();
+    }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.user.service;
+package org.kie.kogito.taskassigning.user.service.api;
 
 public interface Group {
 

@@ -98,7 +98,6 @@
     </dependencies>
   </dependencyManagement>
 
-<<<<<<< HEAD
   <profiles>
     <profile>
       <id>default</id>
@@ -109,16 +108,16 @@
         <module>persistence-commons</module>
         <module>jobs-service</module>
         <module>data-index</module>
-        <module>ui-packages</module>
+        <!--<module>ui-packages</module>-->
         <module>security-commons</module>
-        <module>management-console</module>
-        <module>trusty-ui</module>
+        <!--<module>management-console</module>-->
+        <!--<module>trusty-ui</module>-->
         <module>task-console</module>
-        <module>explainability</module>
-        <module>trusty</module>
+        <!--<module>explainability</module>-->
+        <!--<module>trusty</module>-->
         <module>task-assigning</module>
-        <module>jitexecutor</module>
-        <module>apps-integration-tests</module>
+        <!--<module>jitexecutor</module>-->
+        <!--<module>apps-integration-tests</module>-->
       </modules>
     </profile>
     <profile>
@@ -143,21 +142,4 @@
       </modules>
     </profile>
   </profiles>
-=======
-  <modules>
-    <module>persistence-commons</module>
-    <module>jobs-service</module>
-    <module>data-index</module>
-    <module>ui-packages</module>
-    <module>security-commons</module>
-    <module>management-console</module>
-    <module>trusty-ui</module>
-    <module>task-console</module>
-    <module>explainability</module>
-    <module>trusty</module>
-    <module>task-assigning</module>
-    <module>jitexecutor</module>
-    <module>apps-integration-tests</module>
-  </modules>
->>>>>>> task assigning service module IV
 </project>

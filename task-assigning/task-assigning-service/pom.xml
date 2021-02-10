@@ -37,10 +37,9 @@
       <artifactId>quarkus-smallrye-openapi</artifactId>
     </dependency>
 
-    <!-- TODO, sacar eso lo meti para los experimentos pero no lo voy a usar -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+      <artifactId>quarkus-oidc</artifactId>
     </dependency>
 
     <dependency>
@@ -51,11 +50,11 @@
     <dependency>
       <groupId>org.kie.kogito</groupId>
       <artifactId>task-assigning-core</artifactId>
-      <!-- TODO, this version number must go in the kogito-bom in the kogito-runtimes project -->
-      <version>2.0.0-SNAPSHOT</version>
     </dependency>
-
-
+    <dependency>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>task-assigning-process-service-client</artifactId>
+    </dependency>
 
     <!-- todo estas no se necesitan creo, al final meti toda esta mierda por el tema del multi -->
     <dependency>
@@ -74,12 +73,7 @@
 
 
 
-    <dependency>
-    <groupId>org.kie.kogito</groupId>
-    <artifactId>task-assigning-process-service-client</artifactId>
-    <!-- TODO, this dependency must go in the kogito-bom in the kogito-runtimes project -->
-    <version>2.0.0-SNAPSHOT</version>
-    </dependency>
+
 
 
     <!-- TODO BORRAR -->
@@ -88,6 +82,32 @@
       <artifactId>quarkus-rest-client</artifactId>
     </dependency>
 
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

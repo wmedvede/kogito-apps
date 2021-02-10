@@ -16,7 +16,9 @@
 
 package org.kie.kogito.taskassigning.service.util;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.kie.kogito.taskassigning.core.model.Task;
 import org.kie.kogito.taskassigning.index.service.client.graphql.UserTaskInstance;
@@ -36,12 +38,13 @@ public class TaskUtil {
                 .priority(taskInstance.getPriority())
                 .processInstanceId(taskInstance.getProcessInstanceId())
                 .processId(taskInstance.getProcessId())
+                .rootProcessInstanceId(taskInstance.getRootProcessInstanceId())
                 .rootProcessId(taskInstance.getRootProcessId())
-                .potentialUsers(new HashSet<>(taskInstance.getPotentialUsers()))
-                .potentialGroups(new HashSet<>(taskInstance.getPotentialGroups()))
-                .adminUsers(new HashSet<>(taskInstance.getAdminUsers()))
-                .adminGroups(new HashSet<>(taskInstance.getAdminGroups()))
-                .excludedUsers(new HashSet<>(taskInstance.getExcludedUsers()))
+                .potentialUsers(toSet(taskInstance.getPotentialUsers()))
+                .potentialGroups(toSet(taskInstance.getPotentialGroups()))
+                .adminUsers(toSet(taskInstance.getAdminUsers()))
+                .adminGroups(toSet(taskInstance.getAdminGroups()))
+                .excludedUsers(toSet(taskInstance.getExcludedUsers()))
                 .started(taskInstance.getStarted())
                 .completed(taskInstance.getCompleted())
                 .lastUpdate(taskInstance.getLastUpdate())
@@ -49,5 +52,9 @@ public class TaskUtil {
                 //.inputData(taskInstance.getInputs())
                 .endpoint(taskInstance.getEndpoint())
                 .build();
+    }
+
+    private static <T> Set<T> toSet(Collection<T> collection) {
+        return collection != null ? new HashSet<>(collection) : new HashSet<>();
     }
 }

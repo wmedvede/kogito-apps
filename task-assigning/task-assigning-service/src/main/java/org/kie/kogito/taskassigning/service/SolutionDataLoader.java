@@ -24,13 +24,15 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 
 import org.kie.kogito.taskassigning.index.service.client.graphql.UserTaskInstance;
-import org.kie.kogito.taskassigning.user.service.User;
-import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
+import org.kie.kogito.taskassigning.user.service.api.User;
+import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.kie.kogito.taskassigning.service.RunnableBase.Status.STARTED;
 import static org.kie.kogito.taskassigning.service.RunnableBase.Status.STOPPED;
+import static org.kie.kogito.taskassigning.service.TaskStatus.READY;
+import static org.kie.kogito.taskassigning.service.TaskStatus.RESERVED;
 
 public class SolutionDataLoader extends RunnableBase {
 
@@ -39,8 +41,6 @@ public class SolutionDataLoader extends RunnableBase {
             " It was not possible to access the %s." +
             " Next attempt will be in a period of %s, error: %s";
 
-    private static final String READY = "Ready";
-    private static final String RESERVED = "Reserved";
     //TODO parametrize this value
     private static final int PAGE_SIZE = 2;
 
@@ -141,7 +141,7 @@ public class SolutionDataLoader extends RunnableBase {
         List<UserTaskInstance> tasks = null;
         List<User> users = null;
         try {
-            tasks = taskServiceConnector.findAllTasks(Arrays.asList(READY, RESERVED), PAGE_SIZE);
+            tasks = taskServiceConnector.findAllTasks(Arrays.asList(READY.value(), RESERVED.value()), PAGE_SIZE);
             if (isAlive()) {
                 users = userServiceConnector.findAllUsers();
             }

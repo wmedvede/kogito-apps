@@ -35,22 +35,18 @@ import org.kie.kogito.taskassigning.service.util.UserUtil;
 import static org.kie.kogito.taskassigning.core.model.ModelConstants.DUMMY_TASK_ASSIGNMENT;
 import static org.kie.kogito.taskassigning.core.model.ModelConstants.IS_PLANNING_USER;
 import static org.kie.kogito.taskassigning.core.model.ModelConstants.PLANNING_USER;
+import static org.kie.kogito.taskassigning.service.TaskStatus.RESERVED;
 import static org.kie.kogito.taskassigning.service.util.IndexedElement.addInOrder;
 import static org.kie.kogito.taskassigning.service.util.TaskUtil.fromUserTaskInstance;
 import static org.kie.kogito.taskassigning.service.util.UserUtil.filterDuplicates;
 
 /**
- * This class is intended for the restoring of a TaskAssigningSolution given a set of UserTaskInstance, a set of User and the
- * corresponding PlanningTask for each task. I'ts typically used when the solver needs to be started during the
- * application startup procedure.
+ * This class is intended for the restoring of a TaskAssigningSolution given a set of UserTaskInstance and a set of User.
  */
 public class SolutionBuilder {
 
-    private static final String READY = "Ready";
-    private static final String RESERVED = "Reserved";
-
     private List<UserTaskInstance> userTaskInstances;
-    private List<org.kie.kogito.taskassigning.user.service.User> externalUsers;
+    private List<org.kie.kogito.taskassigning.user.service.api.User> externalUsers;
 
     private SolutionBuilder() {
     }
@@ -64,7 +60,7 @@ public class SolutionBuilder {
         return this;
     }
 
-    public SolutionBuilder withUsers(List<org.kie.kogito.taskassigning.user.service.User> externalUsers) {
+    public SolutionBuilder withUsers(List<org.kie.kogito.taskassigning.user.service.api.User> externalUsers) {
         this.externalUsers = externalUsers;
         return this;
     }
@@ -82,17 +78,9 @@ public class SolutionBuilder {
             Task task = fromUserTaskInstance(userTaskInstance);
             TaskAssignment taskAssignment = new TaskAssignment(task);
             String state = task.getState();
-            switch (state) {
-                case READY:
-                    taskAssignments.add(taskAssignment);
-                    break;
-                case RESERVED:
-                    taskAssignments.add(taskAssignment);
-                    addTaskAssignmentToUser(assignmentsByUserId, taskAssignment, userTaskInstance.getActualOwner(), -1, true);
-                    break;
-                default:
-                    //no other cases exists, sonar required.
-                    throw new IndexOutOfBoundsException("Value: " + userTaskInstance.getState() + " is out of range in current switch");
+            taskAssignments.add(taskAssignment);
+            if (RESERVED.value().equals(state)) {
+                addTaskAssignmentToUser(assignmentsByUserId, taskAssignment, userTaskInstance.getActualOwner(), -1, true);
             }
         });
 

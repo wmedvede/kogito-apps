@@ -17,7 +17,6 @@
 package org.kie.kogito.taskassigning.service;
 
 import java.time.Duration;
-import java.util.concurrent.Future;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -30,7 +29,7 @@ import org.kie.kogito.taskassigning.core.model.TaskAssigningSolution;
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfig;
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfigValidator;
 import org.kie.kogito.taskassigning.service.messaging.BackpressureBufferedEventConsumer;
-import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
+import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -50,7 +50,6 @@ public class SolutionDataLoader extends RunnableBase {
 
     private Semaphore startPermit = new Semaphore(0);
     private Consumer<Result> resultConsumer;
-    private int retries;
     private int remainingRetries;
 
     public static class Result {
@@ -98,7 +97,6 @@ public class SolutionDataLoader extends RunnableBase {
             throw new IllegalStateException("start method can only be invoked when the status is STOPPED");
         }
         this.resultConsumer = resultConsumer;
-        this.retries = retries;
         this.remainingRetries = retries;
         startPermit.release();
     }
@@ -117,7 +115,7 @@ public class SolutionDataLoader extends RunnableBase {
                 if (isAlive()) {
                     Result result = loadData();
                     if (result.hasErrors() && hasRemainingRetries()) {
-                        remainingRetries--;
+                        decreaseRemainingRetries();
                         Thread.sleep(retryInterval.toMillis());
                         startPermit.release();
                     } else if (isAlive() && status.compareAndSet(STARTED, STOPPED)) {
@@ -132,10 +130,14 @@ public class SolutionDataLoader extends RunnableBase {
     }
 
     private boolean hasRemainingRetries() {
-        return retries > 0 && remainingRetries > 0;
+        return remainingRetries > 0;
     }
 
-    private Result loadData() {
+    private void decreaseRemainingRetries() {
+        remainingRetries--;
+    }
+
+    protected Result loadData() {
         List<UserTaskInstance> tasks = null;
         List<User> users = null;
         try {
@@ -157,7 +159,7 @@ public class SolutionDataLoader extends RunnableBase {
         }
     }
 
-    private void applyResult(Result result) {
+    protected void applyResult(Result result) {
         resultConsumer.accept(result);
     }
 }

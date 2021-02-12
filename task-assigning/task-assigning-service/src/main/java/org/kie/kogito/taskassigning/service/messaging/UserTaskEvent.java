@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.messaging;
+package org.kie.kogito.taskassigning.service.messaging;
 
 import java.time.ZonedDateTime;
 import java.util.List;

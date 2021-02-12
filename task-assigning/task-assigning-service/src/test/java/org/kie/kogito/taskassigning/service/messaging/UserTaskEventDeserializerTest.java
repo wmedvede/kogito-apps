@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.messaging;
+package org.kie.kogito.taskassigning.service.messaging;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.kie.kogito.taskassigning.TestUtil.parseZonedDateTime;
+import static org.kie.kogito.taskassigning.service.TestUtil.parseZonedDateTime;
 
 class UserTaskEventDeserializerTest {
 

@@ -22,8 +22,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.kie.kogito.taskassigning.core.model.TaskAssigningSolution;
@@ -65,7 +67,7 @@ public class TaskAssigningService {
 
     AtomicReference<String> serviceStatus = new AtomicReference<>("Stopped");
 
-    int totalChances = 3;
+    int totalChances = 1;
 
     @PostConstruct
     void start() {
@@ -81,10 +83,15 @@ public class TaskAssigningService {
                                                     userServiceConnector,
                                                     Duration.ofMillis(5000));
         managedExecutor.execute(solutionDataLoader);
-        solutionDataLoader.start(this::processTaskLoadResult, 3);
+        solutionDataLoader.start(this::processTaskLoadResult, 1);
     }
 
-    @PreDestroy
+    // use the observer instead of the @PreDestroy alternative.
+    // https://github.com/quarkusio/quarkus/issues/15026
+    void onShutDownEvent(@Observes ShutdownEvent ev) {
+        destroy();
+    }
+
     void destroy() {
         try {
             serviceStatus.set("Destroying");
@@ -104,6 +111,16 @@ public class TaskAssigningService {
     private void processTaskLoadResult(SolutionDataLoader.Result result) {
         if (result.hasErrors()) {
             LOGGER.error("The following error was produced during initial solution loading", result.getErrors().get(0));
+
+            if (totalChances-- > 0) {
+                LOGGER.debug("Initial solution load failed but we have totalChances {} to retry", totalChances);
+                solutionDataLoader.start(this::processTaskLoadResult, 1);
+            } else {
+                LOGGER.debug("There are no more chances left for starting the solution, service won't be able to start");
+                solutionDataLoader.destroy();
+                solverExecutor.destroy();
+            }
+
         } else {
             LOGGER.debug("Data loading successful: tasks: {}, users: {}", result.getTasks().size(), result.getUsers().size());
             TaskAssigningSolution solution = SolutionBuilder.newBuilder()
@@ -113,13 +130,7 @@ public class TaskAssigningService {
             serviceStatus.set("Starting Solver");
             solverExecutor.start(solution);
         }
-        if (totalChances-- > 0) {
-            LOGGER.debug("Initial solution failed but we have totalChances {} to retry", totalChances);
-            solutionDataLoader.start(this::processTaskLoadResult, 3);
-        } else {
-            LOGGER.debug("There are no more chances left for starting the solution, service won't be able to start");
-            solutionDataLoader.destroy();
-        }
+
     }
 
     private void startUpValidation() {

@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+<<<<<<< HEAD:task-assigning/task-assigning-process-service-client/src/test/java/org/kie/kogito/taskassigning/messaging/UserTaskEventDeserializerTest.java
 package org.kie.kogito.taskassigning.messaging;
+=======
+
+package org.kie.kogito.taskassigning.service.messaging;
+>>>>>>> solution processing II:task-assigning/task-assigning-service/src/test/java/org/kie/kogito/taskassigning/service/messaging/UserTaskEventDeserializerTest.java
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.kie.kogito.taskassigning.TestUtil.parseZonedDateTime;
+import static org.kie.kogito.taskassigning.service.TestUtil.parseZonedDateTime;
 
 class UserTaskEventDeserializerTest {
 

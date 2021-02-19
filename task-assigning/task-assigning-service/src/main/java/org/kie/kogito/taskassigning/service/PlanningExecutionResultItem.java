@@ -18,4 +18,27 @@ package org.kie.kogito.taskassigning.service;
 
 public class PlanningExecutionResultItem {
 
+    private PlanningItem item;
+
+    private Exception error;
+
+    public PlanningExecutionResultItem(PlanningItem item) {
+        this.item = item;
+    }
+
+    public PlanningExecutionResultItem(PlanningItem item, Exception error) {
+        this.item = item;
+        this.error = error;
+    }
+    public boolean hasError() {
+        return error != null;
+    }
+
+    public PlanningItem getItem() {
+        return item;
+    }
+
+    public Exception getError() {
+        return error;
+    }
 }

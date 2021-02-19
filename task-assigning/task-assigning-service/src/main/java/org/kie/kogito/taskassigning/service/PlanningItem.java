@@ -16,6 +16,24 @@
 
 package org.kie.kogito.taskassigning.service;
 
+import org.kie.kogito.taskassigning.core.model.Task;
+
 public class PlanningItem {
 
+    private Task task;
+
+    private String targetUser;
+
+    public PlanningItem(Task task, String targetUser) {
+        this.task = task;
+        this.targetUser = targetUser;
+    }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public String getTargetUser() {
+        return targetUser;
+    }
 }

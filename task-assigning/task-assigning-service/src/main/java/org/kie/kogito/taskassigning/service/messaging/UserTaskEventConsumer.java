@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.service;
+package org.kie.kogito.taskassigning.service.messaging;
 
 import java.util.List;
+import java.util.function.Consumer;
 
-public class PlanningExecutionResult {
+public interface UserTaskEventConsumer extends Consumer<UserTaskEvent> {
 
-    private List<PlanningExecutionResultItem> items;
+    void pause();
 
-    public PlanningExecutionResult(List<PlanningExecutionResultItem> items) {
-        this.items = items;
-    }
+    void resume();
 
-    public List<PlanningExecutionResultItem> getItems() {
-        return items;
-    }
+    List<UserTaskEvent> pollEvents();
 }

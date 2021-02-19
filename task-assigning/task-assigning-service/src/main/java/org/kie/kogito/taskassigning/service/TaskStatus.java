@@ -18,7 +18,10 @@ package org.kie.kogito.taskassigning.service;
 
 public enum TaskStatus {
     READY("Ready"),
-    RESERVED("Reserved");
+    RESERVED("Reserved"),
+    ABORTED("Aborted"),
+    SKIPPED("Skipped"),
+    COMPLETED("Completed");
 
     private String value;
 
@@ -34,4 +37,10 @@ public enum TaskStatus {
     public String toString() {
         return value();
     }
+
+
+    public static boolean isTerminal(String status) {
+        return ABORTED.value().equals(status) || SKIPPED.value().equals(status) || COMPLETED.value().equals(status);
+    }
+
 }

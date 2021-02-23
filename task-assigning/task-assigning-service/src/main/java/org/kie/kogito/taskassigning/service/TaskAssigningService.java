@@ -145,7 +145,6 @@ public class TaskAssigningService {
             if (currentSolution.get() == null) {
                 //we are at the very beginning, build the solution from the events.!!!!
                 solutionDataLoader.start(this::onSolutionDataLoad, 1);
-
             } else {
                 List<ProblemFactChange<TaskAssigningSolution>> changes = SolutionChangesBuilder.create()
                         .forSolution(currentSolution.get())
@@ -252,6 +251,11 @@ public class TaskAssigningService {
                     changes.add(new AssignTaskProblemFactChange(new TaskAssignment(task), user));
                     context.setTaskPublished(task.getId(), true);
                 } else {
+                    //TODO
+                    //que tal si en realidad fue asignada a alguien en el medio....
+                    //y por eso ha reventado la asignacion???
+                    //nosotros no podemos saberlo de momento, pero la realiad es que si que estaria publicada
+                    //bueno... es de suponer que esta marca se arreglara automaticamente ni bien llegue el evento correspondiente.
                     context.setTaskPublished(task.getId(), false);
                 }
             }
@@ -276,10 +280,13 @@ public class TaskAssigningService {
 
     void destroy() {
         try {
+
+            //TODO ensure the threads are killed safely
             serviceStatus.set("Destroying");
             LOGGER.info("Service is going down and will be destroyed.");
             solverExecutor.destroy();
             solutionDataLoader.destroy();
+            planningExecutor.destroy();
             LOGGER.info("Service destroy sequence was executed successfully.");
         } catch (Exception e) {
             LOGGER.error("An error was produced during service destroy, but it'll go down anyway.", e);
@@ -293,6 +300,7 @@ public class TaskAssigningService {
     private void onSolutionDataLoad(SolutionDataLoader.Result result) {
         lock.lock();
         try {
+            context.clearTaskContexts();
             if (result.hasErrors()) {
                 LOGGER.error("The following error was produced during initial solution loading", result.getErrors().get(0));
                 if (totalChances-- > 0) {
@@ -311,6 +319,11 @@ public class TaskAssigningService {
                         .build();
 
                 if (solution.getTaskAssignmentList().size() > 1) {
+                    //TODO view this task published status setting.
+                    //is it possible to simple use the task status what we store in the solution???
+                    //on the assumption that the first thing we do after execution a planning is to pin.
+                    solution.getTaskAssignmentList()
+                            .forEach(taskAssignment -> context.setTaskPublished(taskAssignment.getId(), taskAssignment.isPinned()));
                     serviceStatus.set("Starting Solver");
                     solverExecutor.start(solution);
                 } else {

@@ -104,7 +104,7 @@ public class PlanningExecutor extends RunnableBase {
                 ProcessServiceClient serviceClient = serviceClientMap.computeIfAbsent(serviceURL.toString(), ur -> TaskAssigningConfigUtil.createProcessServiceClient(clientServices, config, serviceURL));
                 serviceClient.transitionTask(planningItem.getTask().getProcessId(),
                                              planningItem.getTask().getProcessInstanceId(),
-                                             planningItem.getTask().getReferenceName(),
+                                             planningItem.getTask().getName(),
                                              planningItem.getTask().getId(),
                                              CLAIM_PHASE,
                                              planningItem.getTargetUser(),

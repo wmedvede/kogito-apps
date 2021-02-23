@@ -40,6 +40,11 @@ public class UserTaskEventDeserializer implements Deserializer<UserTaskEvent> {
             event.setEventTime(message.getTime());
             event.setLastUpdate(message.getTime().truncatedTo(ChronoUnit.MILLIS));
             event.setEndpoint(buildEndpoint(message.getSource(), event.getProcessInstanceId(), event.getName(), event.getId()));
+
+            //TODO review this, why do the index return "" when the priority is really null
+            if (event.getPriority() == null) {
+                event.setPriority("");
+            }
             return event;
         } catch (IOException e) {
             throw new SerializationException("An error was produced during UserTaskEventMessage deserialization: " + e.getMessage(), e);

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,6 +35,8 @@ import org.kie.kogito.taskassigning.core.model.solver.realtime.AddTaskProblemFac
 import org.kie.kogito.taskassigning.core.model.solver.realtime.AssignTaskProblemFactChange;
 import org.kie.kogito.taskassigning.core.model.solver.realtime.ReleaseTaskProblemFactChange;
 import org.kie.kogito.taskassigning.core.model.solver.realtime.RemoveTaskProblemFactChange;
+import org.kie.kogito.taskassigning.core.model.solver.realtime.TaskPriorityChangeProblemFactChange;
+import org.kie.kogito.taskassigning.core.model.solver.realtime.TaskStateChangeProblemFactChange;
 import org.kie.kogito.taskassigning.service.messaging.UserTaskEvent;
 import org.kie.kogito.taskassigning.service.util.IndexedElement;
 import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
@@ -41,7 +44,9 @@ import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.kie.kogito.taskassigning.core.model.ModelConstants.DUMMY_TASK_ASSIGNMENT_PLANNER_241;
 import static org.kie.kogito.taskassigning.core.model.ModelConstants.IS_NOT_DUMMY_TASK_ASSIGNMENT;
+import static org.kie.kogito.taskassigning.core.model.ModelConstants.PLANNING_USER;
 import static org.kie.kogito.taskassigning.service.util.EventUtil.filterNewestEventsMap;
 import static org.kie.kogito.taskassigning.service.util.IndexedElement.addInOrder;
 import static org.kie.kogito.taskassigning.service.util.TaskUtil.fromUserTaskEvent;
@@ -100,6 +105,7 @@ public class SolutionChangesBuilder {
         Set<TaskAssignment> removedTasksSet = new HashSet<>();
         List<ReleaseTaskProblemFactChange> releasedTasksChanges = new ArrayList<>();
         Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> assignToUserChangesByUserId = new HashMap<>();
+        List<ProblemFactChange<TaskAssigningSolution>> propertyChanges = new ArrayList<>();
 
         TaskAssignment taskAssignment;
         for (UserTaskEvent taskEvent : filteredEvents.values()) {
@@ -107,8 +113,13 @@ public class SolutionChangesBuilder {
             if (taskAssignment == null) {
                 addNewTaskChanges(taskEvent, usersById, newTaskChanges, assignToUserChangesByUserId);
             } else {
-                addTaskChanges(taskAssignment, taskEvent, usersById, releasedTasksChanges, removedTasksSet, /*propertyChanges,*/ assignToUserChangesByUserId);
+                addTaskChanges(taskAssignment, taskEvent, usersById, releasedTasksChanges, removedTasksSet,
+                               propertyChanges, assignToUserChangesByUserId);
             }
+        }
+
+        for (TaskAssignment removedTask : removedTasksSet) {
+            removedTaskChanges.add(new RemoveTaskProblemFactChange(removedTask));
         }
 
         List<ProblemFactChange<TaskAssigningSolution>> totalChanges = new ArrayList<>();
@@ -117,11 +128,16 @@ public class SolutionChangesBuilder {
         totalChanges.addAll(removedTaskChanges);
         totalChanges.addAll(releasedTasksChanges);
         assignToUserChangesByUserId.values().forEach(byUserChanges -> byUserChanges.forEach(change -> totalChanges.add(change.getElement())));
-        // TODO totalChanges.addAll(propertyChanges);
+        totalChanges.addAll(propertyChanges);
         // TODO totalChanges.addAll(userUpdateChanges);
         totalChanges.addAll(newTaskChanges);
         //TODO totalChanges.addAll(removableUserChanges);
 
+        applyWorkaroundForPLANNER241(solution, totalChanges);
+
+        if (!totalChanges.isEmpty()) {
+            totalChanges.add(0, scoreDirector -> context.setCurrentChangeSetId(context.nextChangeSetId()));
+        }
         return totalChanges;
     }
 
@@ -136,7 +152,6 @@ public class SolutionChangesBuilder {
         } else if (TaskStatus.RESERVED.value().equals(taskEvent.getState())) {
             newTask = fromUserTaskEvent(taskEvent);
             final User user = getUser(usersById, taskEvent.getActualOwner());
-            // assign and ensure the task is published since the task was already seen by the public audience.
             AssignTaskProblemFactChange change = new AssignTaskProblemFactChange(new TaskAssignment(newTask), user, true);
             context.setTaskPublished(taskEvent.getId(), true);
             addChangeToUser(assignToUserChangesByUserId, change, user, -1, true);
@@ -152,22 +167,24 @@ public class SolutionChangesBuilder {
         addInOrder(userChanges, new IndexedElement<>(change, index, pinned));
     }
 
-    private void addTaskChanges(final TaskAssignment taskAssignment,
-                                final UserTaskEvent taskEvent,
-                                final Map<String, User> usersById,
-                                final List<ReleaseTaskProblemFactChange> releasedTasksChanges,
-                                final Set<TaskAssignment> removedTasksSet,
-                                //final List<TaskPropertyChangeProblemFactChange> propertyChanges,
-                                final Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> changesByUserId) {
-        String taskDataStatus = taskEvent.getState();
-        if (TaskStatus.READY.value().equals(taskDataStatus)) {
-            if (TaskStatus.READY.value().equals(taskAssignment.getTask().getState())) {
+    private void addTaskChanges(TaskAssignment taskAssignment,
+                                UserTaskEvent taskEvent,
+                                Map<String, User> usersById,
+                                List<ReleaseTaskProblemFactChange> releasedTasksChanges,
+                                Set<TaskAssignment> removedTasksSet,
+                                List<ProblemFactChange<TaskAssigningSolution>> propertyChanges,
+                                Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> changesByUserId) {
+        String taskState = taskEvent.getState();
+        if (TaskStatus.READY.value().equals(taskState)) {
+            context.setTaskPublished(taskEvent.getId(), false);
+            if (!TaskStatus.READY.value().equals(taskAssignment.getTask().getState())) {
                 //TODO ver si tiene sentido este caso
                 // task was probably assigned to someone else in the past and released from the task
                 // list administration
                 releasedTasksChanges.add(new ReleaseTaskProblemFactChange(taskAssignment));
             }
-        } else if (TaskStatus.RESERVED.value().equals(taskEvent.getState())) {
+        } else if (TaskStatus.RESERVED.value().equals(taskState)) {
+            context.setTaskPublished(taskEvent.getId(), true);
             if (!taskEvent.getActualOwner().equals(taskAssignment.getUser().getId())) {
                 // if Reserved:
                 //       the task was probably manually re-assigned from the task list to another user.
@@ -179,27 +196,20 @@ public class SolutionChangesBuilder {
                 AssignTaskProblemFactChange change = new AssignTaskProblemFactChange(taskAssignment, user, true);
                 addChangeToUser(changesByUserId, change, user, -1, true);
             }
-        } else if (TaskStatus.ABORTED.value().equals(taskEvent.getState())
-                || TaskStatus.SKIPPED.value().equals(taskEvent.getState())
-                || TaskStatus.COMPLETED.value().equals(taskEvent.getState())) {
+        } else if (TaskStatus.isTerminal(taskState)) {
+            context.clearTaskContext(taskEvent.getId());
             removedTasksSet.add(taskAssignment);
         }
 
-        /*
         //TODO agregar el tema de ver otras cosas que puedan cambiar de valor priority, status...., input parameters.
-
-        if (!removedTasksSet.contains(taskAssignment) && (taskEvent.getPriority() != taskAssignment.getPriority() || !taskEvent.getStatus().equals(taskAssignment.getStatus()))) {
-            TaskPropertyChangeProblemFactChange propertyChange = new TaskPropertyChangeProblemFactChange(taskAssignment);
-            if (taskEvent.getPriority() != taskAssignment.getPriority()) {
-                propertyChange.setPriority(taskEvent.getPriority());
+        if (!removedTasksSet.contains(taskAssignment)) {
+            if (!Objects.equals(taskAssignment.getTask().getPriority(), taskEvent.getPriority())) {
+                propertyChanges.add(new TaskPriorityChangeProblemFactChange(taskAssignment, taskEvent.getPriority()));
             }
-            if (!taskEvent.getStatus().equals(taskAssignment.getStatus())) {
-                propertyChange.setStatus(taskEvent.getStatus());
+            if (!Objects.equals(taskAssignment.getTask().getState(), taskEvent.getState())) {
+                propertyChanges.add(new TaskStateChangeProblemFactChange(taskAssignment, taskEvent.getState()));
             }
-            propertyChanges.add(propertyChange);
         }
-
-         */
     }
 
     //TODO must never fail....
@@ -308,5 +318,17 @@ public class SolutionChangesBuilder {
             */
 
         return calculatedChanges;
+    }
+
+    /**
+     * This method adds a second dummy task for avoiding the issue produced by https://issues.jboss.org/browse/PLANNER-241
+     * and will be removed as soon it's fixed. Note that workaround doesn't have a huge impact on the solution since
+     * the dummy task is added only once and to the planning user.
+     */
+    private void applyWorkaroundForPLANNER241(TaskAssigningSolution solution, List<ProblemFactChange<TaskAssigningSolution>> changes) {
+        boolean hasDummyTask241 = solution.getTaskAssignmentList().stream().anyMatch(taskAssignment -> DUMMY_TASK_ASSIGNMENT_PLANNER_241.getId().equals(taskAssignment.getId()));
+        if (!hasDummyTask241) {
+            changes.add(new AssignTaskProblemFactChange(DUMMY_TASK_ASSIGNMENT_PLANNER_241, PLANNING_USER));
+        }
     }
 }

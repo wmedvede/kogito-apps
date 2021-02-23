@@ -93,9 +93,18 @@ public class TaskAssigningServiceContext {
         TaskContext taskContext = taskContextMap.computeIfAbsent(taskId, id -> new TaskContext());
         taskContext.setPublished(published);
     }
+
     public synchronized boolean isPublished(String taskId) {
         TaskContext taskContext = taskContextMap.get(taskId);
         return taskContext != null && taskContext.isPublished();
+    }
+
+    public synchronized void clearTaskContext(String taskId) {
+        taskContextMap.remove(taskId);
+    }
+
+    public synchronized void clearTaskContexts() {
+        taskContextMap.clear();
     }
 
     public void setTaskChangeTime(String taskId, ZonedDateTime changeTime) {

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.kie.kogito.taskassigning.core.model.Task;
 import org.kie.kogito.taskassigning.index.service.client.graphql.UserTaskInstance;
+import org.kie.kogito.taskassigning.service.messaging.UserTaskEvent;
 
 public class TaskUtil {
 
@@ -51,6 +52,33 @@ public class TaskUtil {
                 //TODO Upcoming iteration
                 //.inputData(taskInstance.getInputs())
                 .endpoint(taskInstance.getEndpoint())
+                .build();
+    }
+
+    //TODO ver porque se queja esta mierda por duplicados.
+    public static Task fromUserTaskEvent(UserTaskEvent userTaskEvent) {
+        return Task.newBuilder()
+                .id(userTaskEvent.getId())
+                .name(userTaskEvent.getName())
+                .state(userTaskEvent.getState())
+                .description(userTaskEvent.getDescription())
+                .referenceName(userTaskEvent.getReferenceName())
+                .priority(userTaskEvent.getPriority())
+                .processInstanceId(userTaskEvent.getProcessInstanceId())
+                .processId(userTaskEvent.getProcessId())
+                .rootProcessInstanceId(userTaskEvent.getRootProcessInstanceId())
+                .rootProcessId(userTaskEvent.getRootProcessId())
+                .potentialUsers(toSet(userTaskEvent.getPotentialUsers()))
+                .potentialGroups(toSet(userTaskEvent.getPotentialGroups()))
+                .adminUsers(toSet(userTaskEvent.getAdminUsers()))
+                .adminGroups(toSet(userTaskEvent.getAdminGroups()))
+                .excludedUsers(toSet(userTaskEvent.getExcludedUsers()))
+                .started(userTaskEvent.getStarted())
+                .completed(userTaskEvent.getCompleted())
+                .lastUpdate(userTaskEvent.getLastUpdate())
+                //TODO Upcoming iteration
+                //.inputData(taskInstance.getInputs())
+                .endpoint(userTaskEvent.getEndpoint())
                 .build();
     }
 

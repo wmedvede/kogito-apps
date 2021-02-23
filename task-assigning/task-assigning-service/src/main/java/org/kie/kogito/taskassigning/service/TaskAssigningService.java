@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,13 @@
 package org.kie.kogito.taskassigning.service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -29,13 +33,19 @@ import javax.inject.Inject;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import org.eclipse.microprofile.context.ManagedExecutor;
+import org.kie.kogito.taskassigning.ClientServices;
+import org.kie.kogito.taskassigning.core.model.Task;
 import org.kie.kogito.taskassigning.core.model.TaskAssigningSolution;
+import org.kie.kogito.taskassigning.core.model.TaskAssignment;
+import org.kie.kogito.taskassigning.core.model.User;
+import org.kie.kogito.taskassigning.core.model.solver.realtime.AssignTaskProblemFactChange;
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfig;
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfigValidator;
 import org.kie.kogito.taskassigning.service.messaging.BufferedUserTaskEventConsumer;
 import org.kie.kogito.taskassigning.service.messaging.UserTaskEvent;
 import org.kie.kogito.taskassigning.service.messaging.UserTaskEventConsumer;
 import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
+import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.api.solver.event.BestSolutionChangedEvent;
 import org.slf4j.Logger;
@@ -50,6 +60,9 @@ import org.slf4j.LoggerFactory;
 public class TaskAssigningService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskAssigningService.class);
+
+    //TODO parametrize this value
+    private static final int PUBLISH_WINDOW_SIZE = 2;
 
     @Inject
     SolverFactory<TaskAssigningSolution> solverFactory;
@@ -69,6 +82,9 @@ public class TaskAssigningService {
     @Inject
     UserTaskEventConsumer userTaskEventConsumer;
 
+    @Inject
+    ClientServices clientServices;
+
     private SolverExecutor solverExecutor;
 
     private SolutionDataLoader solutionDataLoader;
@@ -80,6 +96,8 @@ public class TaskAssigningService {
     private AtomicReference<TaskAssigningSolution> currentSolution = new AtomicReference<>(null);
 
     private AtomicReference<TaskAssigningSolution> lastBestSolution = new AtomicReference<>(null);
+
+    private AtomicReference<Boolean> applyingPlanningExecutionResult = new AtomicReference<>(false);
 
     /**
      * Synchronizes potential concurrent accesses between the different components that invoke callbacks on the service.
@@ -95,9 +113,12 @@ public class TaskAssigningService {
         serviceStatus.set("Starting");
         startUpValidation();
         context = new TaskAssigningServiceContext();
+        //TODO revisar este cast
         ((BufferedUserTaskEventConsumer) userTaskEventConsumer).setConsumer(this::onTaskEvents);
         solverExecutor = new SolverExecutor(solverFactory, this::onBestSolutionChange);
         managedExecutor.execute(solverExecutor);
+        planningExecutor = new PlanningExecutor(clientServices, config);
+        managedExecutor.execute(planningExecutor);
         solutionDataLoader = new SolutionDataLoader(taskServiceConnector,
                                                     userServiceConnector,
                                                     Duration.ofMillis(5000));
@@ -107,25 +128,6 @@ public class TaskAssigningService {
 
     private void pauseEvents() {
         userTaskEventConsumer.pause();
-        /*
-         1) the events are initially paused
-         2) only when the service is up, and the solver executor is properly initialized, the events are enabled.
-         3) important thing!!!! while we load the initial solution the events are also paused
-            So we have that
-            1) we try to load the initial solution
-            2) when the loading is successful we have that
-                    if (we have tasks) {
-                        good, create the initial solution
-                        and start the solver
-                    } else {
-                        well, there where no tasks tasks at this moment
-                        no problem, as soon any task is created, etc,
-                        events will arrive.
-                        So simply sit and wait for events
-                        resumeEvents();
-                    }
-
-        */
     }
 
     private void resumeEvents() {
@@ -140,24 +142,23 @@ public class TaskAssigningService {
         lock.lock();
         try {
             pauseEvents();
-            /*
-            if (no hay solution) {
-                quiere decir que comenzamos sin tareas y nos quedamos escuchando...
-                analizar los cambios y ver si tiene sentido crear la solucion....
-                tendríamos q volver leer los usuarios..... o los tomamos de lo que se logro cargar
-                anteriormente....
+            if (currentSolution.get() == null) {
+                //we are at the very beginning, build the solution from the events.!!!!
+                solutionDataLoader.start(this::onSolutionDataLoad, 1);
 
-            } else if (ok ya hay una solution) {
-                calcular los cambios que se han producido....
-                si hay cambios ejecutarlos
             } else {
-                si por algun motivo ejemplo me llega un evento atrasado
-                o estoy justo en el caso ejecucion de un plan etc
-                y realmente ho nay nada para hacer
-                resumeEvents();
+                List<ProblemFactChange<TaskAssigningSolution>> changes = SolutionChangesBuilder.create()
+                        .forSolution(currentSolution.get())
+                        .withContext(context)
+                        .withUserServiceConnector(userServiceConnector)
+                        .fromUserTaskEvents(events)
+                        .build();
+                if (!changes.isEmpty()) {
+                    solverExecutor.addProblemFactChanges(changes);
+                } else {
+                    resumeEvents();
+                }
             }
-             */
-
         } finally {
             lock.unlock();
         }
@@ -201,16 +202,33 @@ public class TaskAssigningService {
         try {
             currentSolution.set(solution);
             context.setProcessedChangeSet(context.getCurrentChangeSetId());
-            List<PlanningItem> planningItems = PlanningBuilder.create()
-                    .withSolution(solution)
-                    //TODO parametrize this value
-                    .withPublishWindowSize(2)
-                    .build();
+            List<ProblemFactChange<TaskAssigningSolution>> changes = null;
+            if (applyingPlanningExecutionResult.get()) {
+                List<UserTaskEvent> pendingEvents = pollEvents();
+                if (!pendingEvents.isEmpty()) {
+                    changes = SolutionChangesBuilder.create()
+                            .forSolution(solution)
+                            .withContext(context)
+                            .withUserServiceConnector(userServiceConnector)
+                            .fromUserTaskEvents(pendingEvents)
+                            .build();
+                }
+            }
 
-            if (!planningItems.isEmpty()) {
-                planningExecutor.execute(planningItems, this::onPlanningExecuted);
+            if (changes != null && !changes.isEmpty()) {
+                applyingPlanningExecutionResult.set(false);
+                solverExecutor.addProblemFactChanges(changes);
             } else {
-                resumeEvents();
+                List<PlanningItem> planningItems = PlanningBuilder.create()
+                        .forSolution(solution)
+                        .withContext(context)
+                        .withPublishWindowSize(PUBLISH_WINDOW_SIZE)
+                        .build();
+                if (!planningItems.isEmpty()) {
+                    planningExecutor.execute(planningItems, this::onPlanningExecuted);
+                } else {
+                    resumeEvents();
+                }
             }
         } finally {
             lock.unlock();
@@ -220,44 +238,31 @@ public class TaskAssigningService {
     private void onPlanningExecuted(PlanningExecutionResult result) {
         lock.lock();
         try {
-            LOGGER.debug("dale fiera!!!!");
-
-            /*
-            0) get the events that arrived in the middle
-            1) Using this information and the results from the execution
-                Prepare a new set of problem fact changes
-                    SUCESSFULL_CHANGES:
-                    1) if the execution of an assignment was successful and no new event
-                           that changes this situation arrived in the middle for this event
-                           has arrived
-                           Then create Pin(Task, "user") for it
-
-                       if the execution was successfull BUT we received and event for this task that
-                       might change this situation. e.g. the task was quickly completed
-                       Then generate the proper change instead....
-                       Maybe instead of pinning the task we must simple remove it, or even assign to someone else....
-
-                    FAILING_CHANGES:
-                        if the execution of a task failed and no new event was received
-                            All right, create the proper RemoveTask(Task) PFC
-                            and start to monitor this task....
-
-
-                        if the execution of the task has changed BUT we received an event that might
-                        change this situation, create the proper PFC
-                            e.g. the task was completed in the middle and this is why it failed.
-                            All right, it's ok to remove the task BUT don't monitor it!
-                            Or the task was assigned to someone else in the middle, all right
-                            instead of removing it program the add to the new user.
-
-                    Finally we could have more events that are not necessary related with the tasks
-                    that were part of the plan, well, use lifecycle to process them.
-
-                    When we have this new list of changes execute them please....
-
-
-
-            */
+            TaskAssigningSolution solution = currentSolution.get();
+            Map<String, User> usersById = solution.getUserList()
+                    .stream()
+                    .collect(Collectors.toMap(User::getId, Function.identity()));
+            List<ProblemFactChange<TaskAssigningSolution>> changes = new ArrayList<>();
+            Task task;
+            User user;
+            for (PlanningExecutionResultItem resultItem : result.getItems()) {
+                task = resultItem.getItem().getTask();
+                if (!resultItem.hasError()) {
+                    user = usersById.get(resultItem.getItem().getTargetUser());
+                    changes.add(new AssignTaskProblemFactChange(new TaskAssignment(task), user));
+                    context.setTaskPublished(task.getId(), true);
+                } else {
+                    context.setTaskPublished(task.getId(), false);
+                }
+            }
+            if (!changes.isEmpty()) {
+                changes.add(0, scoreDirector -> context.setCurrentChangeSetId(context.nextChangeSetId()));
+                applyingPlanningExecutionResult.set(true);
+                solverExecutor.addProblemFactChanges(changes);
+            } else {
+                applyingPlanningExecutionResult.set(false);
+                resumeEvents();
+            }
         } finally {
             lock.unlock();
         }
@@ -329,8 +334,4 @@ public class TaskAssigningService {
     private void validateSolver() {
         solverFactory.buildSolver();
     }
-
-    //TODO refactor this method shomewere
-
-
 }

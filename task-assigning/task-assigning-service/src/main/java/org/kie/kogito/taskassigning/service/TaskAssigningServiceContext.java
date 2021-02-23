@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,10 +24,23 @@ import java.util.Set;
 
 public class TaskAssigningServiceContext {
 
+    private class TaskContext {
+        private boolean published;
+
+        public void setPublished(boolean published) {
+            this.published = published;
+        }
+
+        public boolean isPublished() {
+            return published;
+        }
+    }
+
     private long changeSetIds;
     private long currentChangeSetId;
     private long lastProcessedChangeSetId = -1;
-    private Set<String> publishedTasks = new HashSet<>();
+    private Map<String, TaskContext> taskContextMap = new HashMap<>();
+
     //TODO esto en principio se va si paso a dejar todo metido adentro de la TASK o en el task assignment en su defecto
     //podriamos tener problemas de performance si seteo la nueva tarea todo el tiempo???
     //pero seria digamos la forma correcta.
@@ -76,12 +89,13 @@ public class TaskAssigningServiceContext {
         lastProcessedChangeSetId = -1;
     }
 
-    public boolean isPublished(String taskId) {
-        return publishedTasks.contains(taskId);
+    public synchronized void setTaskPublished(String taskId, boolean published) {
+        TaskContext taskContext = taskContextMap.computeIfAbsent(taskId, id -> new TaskContext());
+        taskContext.setPublished(published);
     }
-
-    public void maskAsPublished(String taskId) {
-        publishedTasks.add(taskId);
+    public synchronized boolean isPublished(String taskId) {
+        TaskContext taskContext = taskContextMap.get(taskId);
+        return taskContext != null && taskContext.isPublished();
     }
 
     public void setTaskChangeTime(String taskId, ZonedDateTime changeTime) {

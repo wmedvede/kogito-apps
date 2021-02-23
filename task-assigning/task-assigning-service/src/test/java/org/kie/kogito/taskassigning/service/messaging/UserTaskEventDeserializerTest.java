@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-<<<<<<< HEAD:task-assigning/task-assigning-process-service-client/src/test/java/org/kie/kogito/taskassigning/messaging/UserTaskEventDeserializerTest.java
-package org.kie.kogito.taskassigning.messaging;
-=======
 
 package org.kie.kogito.taskassigning.service.messaging;
->>>>>>> solution processing II:task-assigning/task-assigning-service/src/test/java/org/kie/kogito/taskassigning/service/messaging/UserTaskEventDeserializerTest.java
 
 import java.nio.file.Files;
 import java.nio.file.Path;

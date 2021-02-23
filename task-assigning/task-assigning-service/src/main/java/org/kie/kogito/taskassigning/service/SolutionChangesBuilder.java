@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,10 @@ package org.kie.kogito.taskassigning.service;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,12 +35,16 @@ import org.kie.kogito.taskassigning.core.model.solver.realtime.AssignTaskProblem
 import org.kie.kogito.taskassigning.core.model.solver.realtime.ReleaseTaskProblemFactChange;
 import org.kie.kogito.taskassigning.core.model.solver.realtime.RemoveTaskProblemFactChange;
 import org.kie.kogito.taskassigning.service.messaging.UserTaskEvent;
+import org.kie.kogito.taskassigning.service.util.IndexedElement;
 import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
 import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.kie.kogito.taskassigning.core.model.ModelConstants.IS_NOT_DUMMY_TASK_ASSIGNMENT;
 import static org.kie.kogito.taskassigning.service.util.EventUtil.filterNewestEventsMap;
+import static org.kie.kogito.taskassigning.service.util.IndexedElement.addInOrder;
+import static org.kie.kogito.taskassigning.service.util.TaskUtil.fromUserTaskEvent;
 import static org.kie.kogito.taskassigning.service.util.UserUtil.fromExternalUser;
 
 public class SolutionChangesBuilder {
@@ -46,10 +52,176 @@ public class SolutionChangesBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(SolutionChangesBuilder.class);
 
     private TaskAssigningServiceContext context;
-    private TaskAssigningSolution solution;
     private UserServiceConnector userServiceConnector;
+    private TaskAssigningSolution solution;
     private List<UserTaskEvent> userTaskEvents;
 
+    private SolutionChangesBuilder() {
+    }
+
+    public static SolutionChangesBuilder create() {
+        return new SolutionChangesBuilder();
+    }
+
+    public SolutionChangesBuilder withContext(TaskAssigningServiceContext context) {
+        this.context = context;
+        return this;
+    }
+
+    public SolutionChangesBuilder withUserServiceConnector(UserServiceConnector userServiceConnector) {
+        this.userServiceConnector = userServiceConnector;
+        return this;
+    }
+
+    public SolutionChangesBuilder forSolution(TaskAssigningSolution solution) {
+        this.solution = solution;
+        return this;
+    }
+
+    public SolutionChangesBuilder fromUserTaskEvents(List<UserTaskEvent> userTaskEvents) {
+        this.userTaskEvents = userTaskEvents;
+        return this;
+    }
+
+    public List<ProblemFactChange<TaskAssigningSolution>> build() {
+        Map<String, User> usersById = solution.getUserList()
+                .stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        Map<String, TaskAssignment> taskAssignmentById = solution.getTaskAssignmentList()
+                .stream()
+                .filter(IS_NOT_DUMMY_TASK_ASSIGNMENT)
+                .collect(Collectors.toMap(TaskAssignment::getId, Function.identity()));
+
+        Map<String, UserTaskEvent> filteredEvents = filterNewestEventsMap(userTaskEvents);
+
+        List<AddTaskProblemFactChange> newTaskChanges = new ArrayList<>();
+        List<RemoveTaskProblemFactChange> removedTaskChanges = new ArrayList<>();
+        Set<TaskAssignment> removedTasksSet = new HashSet<>();
+        List<ReleaseTaskProblemFactChange> releasedTasksChanges = new ArrayList<>();
+        Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> assignToUserChangesByUserId = new HashMap<>();
+
+        TaskAssignment taskAssignment;
+        for (UserTaskEvent taskEvent : filteredEvents.values()) {
+            taskAssignment = taskAssignmentById.remove(taskEvent.getId());
+            if (taskAssignment == null) {
+                addNewTaskChanges(taskEvent, usersById, newTaskChanges, assignToUserChangesByUserId);
+            } else {
+                addTaskChanges(taskAssignment, taskEvent, usersById, releasedTasksChanges, removedTasksSet, /*propertyChanges,*/ assignToUserChangesByUserId);
+            }
+        }
+
+        List<ProblemFactChange<TaskAssigningSolution>> totalChanges = new ArrayList<>();
+
+        // TODO totalChanges.addAll(newUserChanges);
+        totalChanges.addAll(removedTaskChanges);
+        totalChanges.addAll(releasedTasksChanges);
+        assignToUserChangesByUserId.values().forEach(byUserChanges -> byUserChanges.forEach(change -> totalChanges.add(change.getElement())));
+        // TODO totalChanges.addAll(propertyChanges);
+        // TODO totalChanges.addAll(userUpdateChanges);
+        totalChanges.addAll(newTaskChanges);
+        //TODO totalChanges.addAll(removableUserChanges);
+
+        return totalChanges;
+    }
+
+    private void addNewTaskChanges(UserTaskEvent taskEvent,
+                                   Map<String, User> usersById,
+                                   List<AddTaskProblemFactChange> newTasksChanges,
+                                   Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> assignToUserChangesByUserId) {
+        Task newTask;
+        if (TaskStatus.READY.value().equals(taskEvent.getState())) {
+            newTask = fromUserTaskEvent(taskEvent);
+            newTasksChanges.add(new AddTaskProblemFactChange(new TaskAssignment(newTask)));
+        } else if (TaskStatus.RESERVED.value().equals(taskEvent.getState())) {
+            newTask = fromUserTaskEvent(taskEvent);
+            final User user = getUser(usersById, taskEvent.getActualOwner());
+            // assign and ensure the task is published since the task was already seen by the public audience.
+            AssignTaskProblemFactChange change = new AssignTaskProblemFactChange(new TaskAssignment(newTask), user, true);
+            context.setTaskPublished(taskEvent.getId(), true);
+            addChangeToUser(assignToUserChangesByUserId, change, user, -1, true);
+        }
+    }
+
+    private static void addChangeToUser(Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> changesByUserId,
+                                        AssignTaskProblemFactChange change,
+                                        User user,
+                                        int index,
+                                        boolean pinned) {
+        final List<IndexedElement<AssignTaskProblemFactChange>> userChanges = changesByUserId.computeIfAbsent(user.getId(), key -> new ArrayList<>());
+        addInOrder(userChanges, new IndexedElement<>(change, index, pinned));
+    }
+
+    private void addTaskChanges(final TaskAssignment taskAssignment,
+                                final UserTaskEvent taskEvent,
+                                final Map<String, User> usersById,
+                                final List<ReleaseTaskProblemFactChange> releasedTasksChanges,
+                                final Set<TaskAssignment> removedTasksSet,
+                                //final List<TaskPropertyChangeProblemFactChange> propertyChanges,
+                                final Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> changesByUserId) {
+        String taskDataStatus = taskEvent.getState();
+        if (TaskStatus.READY.value().equals(taskDataStatus)) {
+            if (TaskStatus.READY.value().equals(taskAssignment.getTask().getState())) {
+                //TODO ver si tiene sentido este caso
+                // task was probably assigned to someone else in the past and released from the task
+                // list administration
+                releasedTasksChanges.add(new ReleaseTaskProblemFactChange(taskAssignment));
+            }
+        } else if (TaskStatus.RESERVED.value().equals(taskEvent.getState())) {
+            if (!taskEvent.getActualOwner().equals(taskAssignment.getUser().getId())) {
+                // if Reserved:
+                //       the task was probably manually re-assigned from the task list to another user.
+                //       We must respect this assignment.
+
+                final User user = getUser(usersById, taskEvent.getActualOwner());
+
+                // assign and ensure the task is published since the task was already seen by the public audience.
+                AssignTaskProblemFactChange change = new AssignTaskProblemFactChange(taskAssignment, user, true);
+                addChangeToUser(changesByUserId, change, user, -1, true);
+            }
+        } else if (TaskStatus.ABORTED.value().equals(taskEvent.getState())
+                || TaskStatus.SKIPPED.value().equals(taskEvent.getState())
+                || TaskStatus.COMPLETED.value().equals(taskEvent.getState())) {
+            removedTasksSet.add(taskAssignment);
+        }
+
+        /*
+        //TODO agregar el tema de ver otras cosas que puedan cambiar de valor priority, status...., input parameters.
+
+        if (!removedTasksSet.contains(taskAssignment) && (taskEvent.getPriority() != taskAssignment.getPriority() || !taskEvent.getStatus().equals(taskAssignment.getStatus()))) {
+            TaskPropertyChangeProblemFactChange propertyChange = new TaskPropertyChangeProblemFactChange(taskAssignment);
+            if (taskEvent.getPriority() != taskAssignment.getPriority()) {
+                propertyChange.setPriority(taskEvent.getPriority());
+            }
+            if (!taskEvent.getStatus().equals(taskAssignment.getStatus())) {
+                propertyChange.setStatus(taskEvent.getStatus());
+            }
+            propertyChanges.add(propertyChange);
+        }
+
+         */
+    }
+
+    //TODO must never fail....
+    private User getUser(Map<String, User> usersById, String userId) {
+        User user = usersById.get(userId);
+        if (user == null) {
+            LOGGER.debug("User {} was not found in current solution, it'll we looked up in the external user system .", userId);
+            org.kie.kogito.taskassigning.user.service.api.User externalUser = userServiceConnector.findUser(userId);
+            if (externalUser != null) {
+                user = fromExternalUser(externalUser);
+            } else {
+                // We add it by convention, since the task list administration supports the delegation to non-existent users.
+                LOGGER.debug("User {} was not found in the external user system, it looks like it's a manual" +
+                                     " assignment from the tasks administration. It'll be added to the solution" +
+                                     " to respect the assignment.", userId);
+                user = new User(userId);
+            }
+        }
+        return user;
+    }
+
+    //TODO remove this code
     List<ProblemFactChange<TaskAssigningSolution>> buildAfterPlanningExecutionChanges(PlanningExecutionResult executionResult) {
         Map<String, UserTaskEvent> inParallelEvents = filterNewestEventsMap(userTaskEvents);
         Map<String, User> usersById = solution.getUserList()
@@ -136,24 +308,5 @@ public class SolutionChangesBuilder {
             */
 
         return calculatedChanges;
-    }
-
-    //TODO must never fail....
-    private User getUser(Map<String, User> usersById, String userId) {
-        User user = usersById.get(userId);
-        if (user == null) {
-            LOGGER.debug("User {} was not found in current solution, it'll we looked up in the external user system .", userId);
-            org.kie.kogito.taskassigning.user.service.api.User externalUser = userServiceConnector.findUser(userId);
-            if (externalUser != null) {
-                user = fromExternalUser(externalUser);
-            } else {
-                // We add it by convention, since the task list administration supports the delegation to non-existent users.
-                LOGGER.debug("User {} was not found in the external user system, it looks like it's a manual" +
-                                     " assignment from the tasks administration. It'll be added to the solution" +
-                                     " to respect the assignment.", userId);
-                user = new User(userId);
-            }
-        }
-        return user;
     }
 }

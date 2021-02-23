@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,8 +43,13 @@ public class PlanningBuilder {
         return new PlanningBuilder();
     }
 
-    public PlanningBuilder withSolution(TaskAssigningSolution solution) {
+    public PlanningBuilder forSolution(TaskAssigningSolution solution) {
         this.solution = solution;
+        return this;
+    }
+
+    public PlanningBuilder withContext(TaskAssigningServiceContext context) {
+        this.context = context;
         return this;
     }
 
@@ -71,8 +76,10 @@ public class PlanningBuilder {
         int count = 0;
         while (taskAssignmentsIt.hasNext() && (count < publishWindowSize || IS_PLANNING_USER.test(user.getId()))) {
             taskAssignment = taskAssignmentsIt.next();
-            result.add(new PlanningItem(taskAssignment.getTask(), user.getId()));
-            count++;
+            if (!context.isPublished(taskAssignment.getId())) {
+                result.add(new PlanningItem(taskAssignment.getTask(), user.getId()));
+                count++;
+            }
         }
         return result;
     }

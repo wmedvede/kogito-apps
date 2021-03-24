@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.user.service.api;
+package org.kie.kogito.taskassigning.user.service.simple;
 
-import java.util.List;
+import org.kie.kogito.taskassigning.user.service.api.Group;
 
-public interface UserServiceConnector {
+public class GroupImpl implements Group {
 
-    List<User> findAllUsers();
+    private String id;
 
-    User findUser(String id);
+    public GroupImpl(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getId() {
+        return id;
+    }
 }

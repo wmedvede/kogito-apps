@@ -4,20 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.kie.kogito</groupId>
-    <artifactId>kogito-apps</artifactId>
+    <artifactId>task-assigning</artifactId>
     <version>2.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>task-assigning</artifactId>
+  <artifactId>task-assigning-user-service</artifactId>
   <packaging>pom</packaging>
-  <name>Kogito :: Task Assigning</name>
+  <name>Kogito :: Task Assigning :: User Service</name>
 
   <modules>
-    <module>task-assigning-core</module>
-    <module>task-assigning-process-service-client</module>
-    <module>task-assigning-user-service</module>
-    <module>task-assigning-service</module>
+    <module>task-assigning-user-service-api</module>
+    <module>task-assigning-user-service-simple</module>
   </modules>
 
 </project>

@@ -37,6 +37,9 @@ import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigPro
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_CLIENT_ID;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_CREDENTIALS_SECRET;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_TENANT_ENABLED;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_INTERVAL;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_RETRIES;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION;
 
 @ApplicationScoped
 public class TaskAssigningConfig {
@@ -90,6 +93,18 @@ public class TaskAssigningConfig {
     @Inject
     @ConfigProperty(name = PUBLISH_WINDOW_SIZE, defaultValue = "2")
     int publishWindowSize;
+
+    @Inject
+    @ConfigProperty(name = USER_SERVICE_SYNC_INTERVAL, defaultValue = "PT2H;")
+    Duration userServiceSyncInterval;
+
+    @Inject
+    @ConfigProperty(name = USER_SERVICE_SYNC_RETRIES, defaultValue = "5")
+    int userServiceSyncRetries;
+
+    @Inject
+    @ConfigProperty(name = USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION, defaultValue = "PT5S")
+    Duration usersServiceSyncRetryInterval;
 
     public boolean isOidcTenantEnabled() {
         return oidcTenantEnabled;
@@ -173,6 +188,18 @@ public class TaskAssigningConfig {
         return publishWindowSize;
     }
 
+    public Duration getUserServiceSyncInterval() {
+        return userServiceSyncInterval;
+    }
+
+    public int getUserServiceSyncRetries() {
+        return userServiceSyncRetries;
+    }
+
+    public Duration getUsersServiceSyncRetryInterval() {
+        return usersServiceSyncRetryInterval;
+    }
+
     @Override
     public String toString() {
         return "TaskAssigningConfig{" +
@@ -187,6 +214,9 @@ public class TaskAssigningConfig {
                 ", dataLoaderRetries=" + dataLoaderRetries +
                 ", dataLoaderPageSize=" + dataLoaderPageSize +
                 ", publishWindowSize=" + publishWindowSize +
+                ", userServiceSyncInterval=" + userServiceSyncInterval +
+                ", userServiceSyncRetries=" + userServiceSyncRetries +
+                ", usersServiceSyncRetryInterval=" + usersServiceSyncRetryInterval +
                 '}';
     }
 }

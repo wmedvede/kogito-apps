@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.service.event;
+package org.kie.kogito.taskassigning.user.service;
 
-import java.time.ZonedDateTime;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import org.kie.kogito.taskassigning.user.service.User;
+public interface User {
 
-public class UserDataEvent extends DataEvent<List<User>> {
+    String getId();
 
-    public UserDataEvent(List<User> data, ZonedDateTime eventTime) {
-        super(DataEventType.USER_DATA_EVENT, data, eventTime);
-    }
+    Set<Group> getGroups();
+
+    Map<String, Object> getAttributes();
+
 }

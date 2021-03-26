@@ -43,7 +43,7 @@ import org.kie.kogito.taskassigning.core.model.solver.realtime.UserPropertyChang
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
 import org.kie.kogito.taskassigning.service.util.IndexedElement;
 import org.kie.kogito.taskassigning.service.util.UserUtil;
-import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
+import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,7 +220,7 @@ public class SolutionChangesBuilder {
         } else {
             LOGGER.debug("User {} was not found in current solution, it'll we looked up in the external user system .", userId);
             User user;
-            org.kie.kogito.taskassigning.user.service.api.User externalUser = null;
+            org.kie.kogito.taskassigning.user.service.User externalUser = null;
             try {
                 externalUser = userServiceConnector.findUser(userId);
             } catch (Exception e) {
@@ -240,7 +240,7 @@ public class SolutionChangesBuilder {
         }
     }
 
-    private void addFullSyncUserChanges(List<org.kie.kogito.taskassigning.user.service.api.User> externalUserList) {
+    private void addFullSyncUserChanges(List<org.kie.kogito.taskassigning.user.service.User> externalUserList) {
         final Set<String> updatedUserIds = new HashSet<>();
         externalUserList.stream()
                 .filter(externalUser -> !IS_PLANNING_USER.test(externalUser.getId()))
@@ -279,15 +279,9 @@ public class SolutionChangesBuilder {
     }
 
     private static boolean equalsByProperties(User a, User b) {
+        //TODO al final me quedan atributos calculados?
         return Objects.equals(a.isEnabled(), b.isEnabled()) &&
                 Objects.equals(a.getGroups(), b.getGroups()) &&
                 Objects.equals(a.getAttributes(), b.getAttributes());
-
-        //TODO agregar el conjunto de atributos calculados
-        /*
-         * &&
-         * Objects.equals(a.getAllLabelValues(), b.getAllLabelValues());
-         */
-
     }
 }

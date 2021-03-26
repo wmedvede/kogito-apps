@@ -9,12 +9,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>task-assigning-user-service</artifactId>
-  <packaging>pom</packaging>
-  <name>Kogito :: Task Assigning :: User Service</name>
-
-  <modules>
-    <module>task-assigning-user-service-properties</module>
-  </modules>
+  <artifactId>task-assigning-integration-api</artifactId>
+  <name>Kogito :: Task Assigning :: Integration API</name>
 
 </project>

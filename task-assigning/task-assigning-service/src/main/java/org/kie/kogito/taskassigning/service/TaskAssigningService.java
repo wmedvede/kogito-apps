@@ -45,7 +45,7 @@ import org.kie.kogito.taskassigning.service.event.BufferedTaskAssigningServiceEv
 import org.kie.kogito.taskassigning.service.event.DataEvent;
 import org.kie.kogito.taskassigning.service.event.TaskDataEvent;
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
-import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
+import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.api.solver.event.BestSolutionChangedEvent;
@@ -60,7 +60,6 @@ import static org.kie.kogito.taskassigning.core.model.solver.TaskHelper.filterNo
 import static org.kie.kogito.taskassigning.service.util.EventUtil.filterNewestTaskEvents;
 import static org.kie.kogito.taskassigning.service.util.EventUtil.filterNewestTaskEventsInContext;
 import static org.kie.kogito.taskassigning.service.util.EventUtil.filterNewestUserEvent;
-import static org.kie.kogito.taskassigning.service.util.EventUtil.filterTaskDataEvents;
 import static org.kie.kogito.taskassigning.service.util.TaskUtil.fromTaskDataEvents;
 
 @ApplicationScoped
@@ -171,8 +170,8 @@ public class TaskAssigningService {
                     //c) the initialization procedure has started after some startingEvents arrival, and the solution
                     //data loader has responded with the users.
                     if (hasQueuedEvents()) {
-                        // incorporate events that could have been arrived in the middle while the users were being loaded.
-                        List<TaskDataEvent> newEvents = filterNewestTaskEventsInContext(context, filterTaskDataEvents(pollEvents()));
+                        //incorporate the events that could have been arrived in the middle while the users were being loaded.
+                        List<TaskDataEvent> newEvents = filterNewestTaskEventsInContext(context, pollEvents());
                         startingEvents = combineAndFilerNewestActiveTaskEvents(startingEvents, newEvents);
                     }
                     solution = SolutionBuilder.newBuilder()
@@ -188,7 +187,7 @@ public class TaskAssigningService {
                             .withUsers(result.getUsers())
                             .build();
                 }
-                //a) and c), if the solution has non dummy taks the solver can be started.
+                //a) and c), if the solution has non dummy tasks the solver can be started.
                 taskAssignments = filterNonDummyAssignments(solution.getTaskAssignmentList());
                 if (!taskAssignments.isEmpty()) {
                     taskAssignments.forEach(taskAssignment -> {
@@ -240,7 +239,7 @@ public class TaskAssigningService {
     void processDataEvents(List<DataEvent<?>> events) {
         lock.lock();
         try {
-            List<TaskDataEvent> newTaskDataEvents = filterNewestTaskEventsInContext(context, filterTaskDataEvents(events));
+            List<TaskDataEvent> newTaskDataEvents = filterNewestTaskEventsInContext(context, events);
             if (currentSolution.get() == null) {
                 List<TaskDataEvent> activeTaskEvents = newTaskDataEvents.stream()
                         .filter(IS_ACTIVE_TASK_EVENT)
@@ -315,10 +314,10 @@ public class TaskAssigningService {
             currentSolution.set(solution);
             context.setProcessedChangeSet(context.getCurrentChangeSetId());
             List<ProblemFactChange<TaskAssigningSolution>> pendingEventsChanges = null;
-            if (Boolean.TRUE.equals(applyingPlanningExecutionResult.get())) {
+            if (applyingPlanningExecutionResult.get()) {
                 applyingPlanningExecutionResult.set(false);
                 List<DataEvent<?>> pendingEvents = pollEvents();
-                List<TaskDataEvent> pendingTaskDataEvents = filterNewestTaskEventsInContext(context, filterTaskDataEvents(pendingEvents));
+                List<TaskDataEvent> pendingTaskDataEvents = filterNewestTaskEventsInContext(context, pendingEvents);
                 UserDataEvent pendingUserDataEvent = filterNewestUserEvent(pendingEvents);
                 if (!pendingTaskDataEvents.isEmpty() || pendingUserDataEvent != null) {
                     pendingEventsChanges = SolutionChangesBuilder.create()
@@ -417,6 +416,7 @@ public class TaskAssigningService {
     void destroy() {
         try {
             LOGGER.info("Service is going down and will be destroyed.");
+            userServiceAdapter.destroy();
             solverExecutor.destroy();
             solutionDataLoader.destroy();
             planningExecutor.destroy();

@@ -520,8 +520,8 @@ class TaskAssigningServiceTest {
      * verify(userTaskEventConsumer).resume();
      * }
      * 
-     * private static org.kie.kogito.taskassigning.user.service.api.User mockExternalUser(String id) {
-     * org.kie.kogito.taskassigning.user.service.api.User user = mock(org.kie.kogito.taskassigning.user.service.api.User.class);
+     * private static org.kie.kogito.taskassigning.api.user.User mockExternalUser(String id) {
+     * org.kie.kogito.taskassigning.api.user.User user = mock(org.kie.kogito.taskassigning.api.user.User.class);
      * doReturn(id).when(user).getId();
      * doReturn(Collections.emptyMap()).when(user).getAttributes();
      * doReturn(Collections.emptySet()).when(user).getGroups();

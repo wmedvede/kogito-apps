@@ -48,7 +48,7 @@ public class TaskAssigningConfig {
     private static final String KEYCLOAK_AUTH_REALMS_SUB_PATH = "/auth/realms/";
     private static final String KEYCLOAK_SERVER_URL_UNEXPECTED_FORMAT_ERROR = "The configuration value for property: " + QUARKUS_OIDC_AUTH_SERVER_URL +
             ", %s doesn't look to be a valid Keycloak authentication domain configuration in the form " +
-            "\'https://host:port/auth/realms/{realm}\' where '{realm}' has to be replaced by the name of the Keycloak realm.";
+            "'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.";
 
     @Inject
     @ConfigProperty(name = QUARKUS_OIDC_TENANT_ENABLED)
@@ -95,7 +95,7 @@ public class TaskAssigningConfig {
     int publishWindowSize;
 
     @Inject
-    @ConfigProperty(name = USER_SERVICE_SYNC_INTERVAL, defaultValue = "PT2H;")
+    @ConfigProperty(name = USER_SERVICE_SYNC_INTERVAL, defaultValue = "PT2H")
     Duration userServiceSyncInterval;
 
     @Inject

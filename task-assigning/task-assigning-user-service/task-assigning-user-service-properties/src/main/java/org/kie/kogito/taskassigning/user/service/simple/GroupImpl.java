@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.service.event;
+package org.kie.kogito.taskassigning.user.service.simple;
 
-import java.time.ZonedDateTime;
-import java.util.List;
+import org.kie.kogito.taskassigning.user.service.Group;
 
-import org.kie.kogito.taskassigning.user.service.User;
+public class GroupImpl implements Group {
 
-public class UserDataEvent extends DataEvent<List<User>> {
+    private String id;
 
-    public UserDataEvent(List<User> data, ZonedDateTime eventTime) {
-        super(DataEventType.USER_DATA_EVENT, data, eventTime);
+    public GroupImpl(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 }

@@ -32,7 +32,7 @@ import org.kie.kogito.taskassigning.core.model.solver.realtime.AddTaskProblemFac
 import org.kie.kogito.taskassigning.core.model.solver.realtime.AssignTaskProblemFactChange;
 import org.kie.kogito.taskassigning.core.model.solver.realtime.ReleaseTaskProblemFactChange;
 import org.kie.kogito.taskassigning.core.model.solver.realtime.RemoveTaskProblemFactChange;
-import org.kie.kogito.taskassigning.user.service.api.UserServiceConnector;
+import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.optaplanner.core.api.score.director.ScoreDirector;
@@ -99,7 +99,7 @@ class SolutionChangesBuilderTest {
     @Test
     void addNewReservedTaskChangeWithActualOwnerInExternalSystem() {
         TaskData taskData = mockTaskData(TASK_1_ID, TaskState.RESERVED.value(), USER_1, TASK_1_LAST_UPDATE);
-        org.kie.kogito.taskassigning.user.service.api.User externalUser = mockExternalUser(USER_1);
+        org.kie.kogito.taskassigning.user.service.User externalUser = mockExternalUser(USER_1);
         doReturn(externalUser).when(userServiceConnector).findUser(USER_1);
         TaskAssigningSolution solution = mockSolution(Collections.emptyList(), Collections.emptyList());
         addNewReservedTaskChangeWithActualOwner(solution, taskData);
@@ -162,7 +162,7 @@ class SolutionChangesBuilderTest {
     void addReservedTaskChangeForAnotherUserInExternalSystem() {
         TaskAssignment user1Assignment = new TaskAssignment(mockTask(TASK_1_ID));
         User user1 = TestUtil.mockUser(USER_1, Collections.singletonList(user1Assignment));
-        org.kie.kogito.taskassigning.user.service.api.User user2 = mockExternalUser(USER_2);
+        org.kie.kogito.taskassigning.user.service.User user2 = mockExternalUser(USER_2);
         doReturn(user2).when(userServiceConnector).findUser(USER_2);
         TaskAssigningSolution solution = mockSolution(Collections.singletonList(user1), Collections.singletonList(user1Assignment));
         TaskData taskData = mockTaskData(TASK_1_ID, RESERVED.value(), USER_2, TASK_1_LAST_UPDATE);

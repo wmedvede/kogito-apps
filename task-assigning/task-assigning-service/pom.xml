@@ -14,7 +14,6 @@
   <name>kogito :: Task Assigning Service</name>
 
   <dependencies>
-
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-core</artifactId>
@@ -51,7 +50,6 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-quarkus</artifactId>
@@ -66,12 +64,11 @@
     </dependency>
     <dependency>
       <groupId>org.kie.kogito</groupId>
-      <artifactId>task-assigning-user-service-api</artifactId>
+      <artifactId>task-assigning-integration-api</artifactId>
     </dependency>
-    <!-- TODO, this dependency won't go here? -->
     <dependency>
       <groupId>org.kie.kogito</groupId>
-      <artifactId>task-assigning-user-service-simple</artifactId>
+      <artifactId>task-assigning-user-service-properties</artifactId>
     </dependency>
 
     <!-- test dependencies -->

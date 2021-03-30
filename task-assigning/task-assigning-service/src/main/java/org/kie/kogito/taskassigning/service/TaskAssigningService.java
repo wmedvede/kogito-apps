@@ -82,7 +82,6 @@ public class TaskAssigningService {
     @Inject
     TaskServiceConnector taskServiceConnector;
 
-    @Inject
     UserServiceConnector userServiceConnector;
 
     UserServiceAdapter userServiceAdapter;
@@ -92,6 +91,9 @@ public class TaskAssigningService {
 
     @Inject
     ClientServices clientServices;
+
+    @Inject
+    TaskAssigningServiceHelper serviceHelper;
 
     private SolverExecutor solverExecutor;
 
@@ -122,8 +124,6 @@ public class TaskAssigningService {
     void start() {
         startUpValidation();
         context = createContext();
-        //TODO more fine grained error control.
-        userServiceConnector.start();
         serviceEventConsumer.setConsumer(this::onDataEvents);
         solverExecutor = createSolverExecutor(solverFactory, this::onBestSolutionChange);
         managedExecutor.execute(solverExecutor);
@@ -411,7 +411,7 @@ public class TaskAssigningService {
     }
 
     /**
-     * Handles the TaskAssigningService finalization prodecure.
+     * Handles the TaskAssigningService finalization procedure.
      */
     void destroy() {
         try {
@@ -428,11 +428,17 @@ public class TaskAssigningService {
 
     private void startUpValidation() {
         validateConfig();
+        validateAndSetUserService();
         validateSolver();
     }
 
     private void validateConfig() {
         TaskAssigningConfigValidator.of(config).validate();
+    }
+
+    private void validateAndSetUserService() {
+        userServiceConnector = serviceHelper.validateAndGetUserServiceConnector();
+        userServiceConnector.start();
     }
 
     private void validateSolver() {

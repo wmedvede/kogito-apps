@@ -21,6 +21,12 @@ import java.util.List;
 public interface UserServiceConnector {
 
     /**
+     * @return the name of the concrete UserServiceConnector implementation. This value is used for configuring
+     *         the property kogito.task-assigning.user-service-connector in cases this where this connector is to be used.
+     */
+    String getName();
+
+    /**
      * Invoked by the task assigning service as part of the initialization procedure and before any other method
      * is invoked.
      */

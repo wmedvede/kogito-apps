@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.user.service.simple;
+package org.kie.kogito.taskassigning.user.service.properties;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 import org.kie.kogito.taskassigning.user.service.Group;
-import org.kie.kogito.taskassigning.user.service.User;
 
-public class UserImpl implements User {
+public class GroupImpl implements Group {
 
     private String id;
-    private Set<Group> groups;
-    private Map<String, Object> attributes;
 
-    public UserImpl(String id, Set<Group> groups, Map<String, Object> attributes) {
+    public GroupImpl(String id) {
         this.id = id;
-        this.groups = groups;
-        this.attributes = attributes;
     }
 
     @Override
@@ -40,12 +34,19 @@ public class UserImpl implements User {
     }
 
     @Override
-    public Set<Group> getGroups() {
-        return groups;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        GroupImpl group = (GroupImpl) o;
+        return Objects.equals(id, group.id);
     }
 
     @Override
-    public Map<String, Object> getAttributes() {
-        return attributes;
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

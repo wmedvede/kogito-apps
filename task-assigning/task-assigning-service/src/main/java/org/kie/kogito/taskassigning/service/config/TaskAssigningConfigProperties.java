@@ -45,6 +45,8 @@ public class TaskAssigningConfigProperties {
 
     public static final String PUBLISH_WINDOW_SIZE = TASK_ASSIGNING_PROPERTY_PREFIX + ".publish-window-size";
 
+    public static final String USER_SERVICE_CONNECTOR = TASK_ASSIGNING_PROPERTY_PREFIX + ".user-service-connector";
+
     public static final String USER_SERVICE_SYNC_INTERVAL = TASK_ASSIGNING_PROPERTY_PREFIX + ".user-service-sync.interval";
 
     public static final String USER_SERVICE_SYNC_RETRIES = TASK_ASSIGNING_PROPERTY_PREFIX + ".user-service-sync.retries";

@@ -37,6 +37,7 @@ import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigPro
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_CLIENT_ID;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_CREDENTIALS_SECRET;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_TENANT_ENABLED;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_CONNECTOR;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_INTERVAL;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_RETRIES;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION;
@@ -49,6 +50,8 @@ public class TaskAssigningConfig {
     private static final String KEYCLOAK_SERVER_URL_UNEXPECTED_FORMAT_ERROR = "The configuration value for property: " + QUARKUS_OIDC_AUTH_SERVER_URL +
             ", %s doesn't look to be a valid Keycloak authentication domain configuration in the form " +
             "'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.";
+
+    public static final String DEFAULT_USER_SERVICE_CONNECTOR = "PropertiesConnector";
 
     @Inject
     @ConfigProperty(name = QUARKUS_OIDC_TENANT_ENABLED)
@@ -93,6 +96,10 @@ public class TaskAssigningConfig {
     @Inject
     @ConfigProperty(name = PUBLISH_WINDOW_SIZE, defaultValue = "2")
     int publishWindowSize;
+
+    @Inject
+    @ConfigProperty(name = USER_SERVICE_CONNECTOR, defaultValue = DEFAULT_USER_SERVICE_CONNECTOR)
+    String userServiceConnector;
 
     @Inject
     @ConfigProperty(name = USER_SERVICE_SYNC_INTERVAL, defaultValue = "PT2H")
@@ -188,6 +195,10 @@ public class TaskAssigningConfig {
         return publishWindowSize;
     }
 
+    public String getUserServiceConnector() {
+        return userServiceConnector;
+    }
+
     public Duration getUserServiceSyncInterval() {
         return userServiceSyncInterval;
     }
@@ -214,6 +225,7 @@ public class TaskAssigningConfig {
                 ", dataLoaderRetries=" + dataLoaderRetries +
                 ", dataLoaderPageSize=" + dataLoaderPageSize +
                 ", publishWindowSize=" + publishWindowSize +
+                ", userServiceConnector=" + userServiceConnector +
                 ", userServiceSyncInterval=" + userServiceSyncInterval +
                 ", userServiceSyncRetries=" + userServiceSyncRetries +
                 ", usersServiceSyncRetryInterval=" + usersServiceSyncRetryInterval +

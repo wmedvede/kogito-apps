@@ -21,6 +21,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TaskAssigningServiceTest {
+
+    //TODO seguimo acaaaaa!!
+
     /*
      * private static final String DATA_INDEX_SERVER_URL = "http://localhost:8180/graphql";
      * 

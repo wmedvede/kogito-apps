@@ -39,6 +39,7 @@ import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigPro
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.QUARKUS_OIDC_TENANT_ENABLED;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_CONNECTOR;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_INTERVAL;
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_ON_RETRIES_EXCEEDED_STRATEGY;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_RETRIES;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION;
 
@@ -52,6 +53,11 @@ public class TaskAssigningConfig {
             "'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.";
 
     public static final String DEFAULT_USER_SERVICE_CONNECTOR = "PropertiesConnector";
+
+    public enum UserServiceSyncOnRetriesExceededStrategy {
+        SYNC_ON_NEXT_INTERVAL,
+        SYNC_AGAIN
+    }
 
     @Inject
     @ConfigProperty(name = QUARKUS_OIDC_TENANT_ENABLED)
@@ -110,8 +116,12 @@ public class TaskAssigningConfig {
     int userServiceSyncRetries;
 
     @Inject
+    @ConfigProperty(name = USER_SERVICE_SYNC_ON_RETRIES_EXCEEDED_STRATEGY, defaultValue = "SYNC_AGAIN")
+    UserServiceSyncOnRetriesExceededStrategy userServiceSyncOnRetriesExceededStrategy;
+
+    @Inject
     @ConfigProperty(name = USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION, defaultValue = "PT5S")
-    Duration usersServiceSyncRetryInterval;
+    Duration userServiceSyncRetryInterval;
 
     public boolean isOidcTenantEnabled() {
         return oidcTenantEnabled;
@@ -207,8 +217,12 @@ public class TaskAssigningConfig {
         return userServiceSyncRetries;
     }
 
-    public Duration getUsersServiceSyncRetryInterval() {
-        return usersServiceSyncRetryInterval;
+    public UserServiceSyncOnRetriesExceededStrategy getUserServiceSyncOnRetriesExceededStrategy() {
+        return userServiceSyncOnRetriesExceededStrategy;
+    }
+
+    public Duration getUserServiceSyncRetryInterval() {
+        return userServiceSyncRetryInterval;
     }
 
     @Override
@@ -228,7 +242,8 @@ public class TaskAssigningConfig {
                 ", userServiceConnector=" + userServiceConnector +
                 ", userServiceSyncInterval=" + userServiceSyncInterval +
                 ", userServiceSyncRetries=" + userServiceSyncRetries +
-                ", usersServiceSyncRetryInterval=" + usersServiceSyncRetryInterval +
+                ", userServiceSyncOnRetriesExceededStrategy=" + userServiceSyncOnRetriesExceededStrategy +
+                ", usersServiceSyncRetryInterval=" + userServiceSyncRetryInterval +
                 '}';
     }
 }

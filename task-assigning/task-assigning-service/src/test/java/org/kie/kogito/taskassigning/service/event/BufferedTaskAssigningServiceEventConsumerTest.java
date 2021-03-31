@@ -16,73 +16,85 @@
 
 package org.kie.kogito.taskassigning.service.event;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BufferedTaskAssigningServiceEventConsumerTest {
-    /*
-     * private BufferedTaskAssigningServiceEventConsumer userTaskEventConsumer;
-     * 
-     * @Mock
-     * private Consumer<List<UserTaskEvent>> consumer;
-     * 
-     * @Captor
-     * private ArgumentCaptor<List<UserTaskEvent>> eventsCaptor;
-     * 
-     * @Mock
-     * private UserTaskEvent event1;
-     * 
-     * @Mock
-     * private UserTaskEvent event2;
-     * 
-     * @BeforeEach
-     * void setUp() {
-     * userTaskEventConsumer = new BufferedTaskAssigningServiceEventConsumer();
-     * userTaskEventConsumer.setConsumer(consumer);
-     * }
-     * 
-     * @Test
-     * void pause() {
-     * userTaskEventConsumer.pause();
-     * userTaskEventConsumer.accept(event1);
-     * userTaskEventConsumer.accept(event2);
-     * verify(consumer, never()).accept(anyList());
-     * }
-     * 
-     * @Test
-     * void resume() {
-     * userTaskEventConsumer.pause();
-     * userTaskEventConsumer.accept(event1);
-     * userTaskEventConsumer.accept(event2);
-     * verify(consumer, never()).accept(anyList());
-     * userTaskEventConsumer.resume();
-     * verify(consumer).accept(eventsCaptor.capture());
-     * assertThat(eventsCaptor.getValue()).isNotNull();
-     * assertThat(eventsCaptor.getValue()).containsExactlyElementsOf(Arrays.asList(event1, event2));
-     * }
-     * 
-     * @Test
-     * void pollEvents() {
-     * userTaskEventConsumer.pause();
-     * userTaskEventConsumer.accept(event1);
-     * userTaskEventConsumer.accept(event2);
-     * verify(consumer, never()).accept(anyList());
-     * List<UserTaskEvent> events = userTaskEventConsumer.pollEvents();
-     * assertThat(events)
-     * .hasSize(2)
-     * .containsExactlyElementsOf(Arrays.asList(event1, event2));
-     * userTaskEventConsumer.resume();
-     * verify(consumer, never()).accept(anyList());
-     * }
-     * 
-     * @Test
-     * void queuedEvents() {
-     * userTaskEventConsumer.pause();
-     * userTaskEventConsumer.accept(event1);
-     * userTaskEventConsumer.accept(event2);
-     * assertThat(userTaskEventConsumer.queuedEvents()).isEqualTo(2);
-     * }
-     */
 
+    private BufferedTaskAssigningServiceEventConsumer taskAssigningServiceEventConsumer;
+
+    @Mock
+    private Consumer<List<DataEvent<?>>> consumer;
+
+    @Captor
+    private ArgumentCaptor<List<DataEvent<?>>> eventsCaptor;
+
+    @Mock
+    private TaskDataEvent event1;
+
+    @Mock
+    private UserDataEvent event2;
+
+    @BeforeEach
+    void setUp() {
+        taskAssigningServiceEventConsumer = new BufferedTaskAssigningServiceEventConsumer();
+        taskAssigningServiceEventConsumer.setConsumer(consumer);
+    }
+
+    @Test
+    void pause() {
+        taskAssigningServiceEventConsumer.pause();
+        taskAssigningServiceEventConsumer.accept(event1);
+        taskAssigningServiceEventConsumer.accept(event2);
+        verify(consumer, never()).accept(anyList());
+    }
+
+    @Test
+    void resume() {
+        taskAssigningServiceEventConsumer.pause();
+        taskAssigningServiceEventConsumer.accept(event1);
+        taskAssigningServiceEventConsumer.accept(event2);
+        verify(consumer, never()).accept(anyList());
+        taskAssigningServiceEventConsumer.resume();
+        verify(consumer).accept(eventsCaptor.capture());
+        assertThat(eventsCaptor.getValue()).isNotNull();
+        assertThat(eventsCaptor.getValue()).containsExactlyElementsOf(Arrays.asList(event1, event2));
+    }
+
+    @Test
+    void pollEvents() {
+        taskAssigningServiceEventConsumer.pause();
+        taskAssigningServiceEventConsumer.accept(event1);
+        taskAssigningServiceEventConsumer.accept(event2);
+        verify(consumer, never()).accept(anyList());
+        List<DataEvent<?>> events = taskAssigningServiceEventConsumer.pollEvents();
+        assertThat(events)
+                .hasSize(2)
+                .containsExactlyElementsOf(Arrays.asList(event1, event2));
+        taskAssigningServiceEventConsumer.resume();
+        verify(consumer, never()).accept(anyList());
+    }
+
+    @Test
+    void queuedEvents() {
+        taskAssigningServiceEventConsumer.pause();
+        taskAssigningServiceEventConsumer.accept(event1);
+        taskAssigningServiceEventConsumer.accept(event2);
+        assertThat(taskAssigningServiceEventConsumer.queuedEvents()).isEqualTo(2);
+    }
 }

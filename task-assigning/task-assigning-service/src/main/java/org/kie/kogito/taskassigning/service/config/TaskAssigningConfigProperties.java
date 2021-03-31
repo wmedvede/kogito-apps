@@ -51,6 +51,8 @@ public class TaskAssigningConfigProperties {
 
     public static final String USER_SERVICE_SYNC_RETRIES = TASK_ASSIGNING_PROPERTY_PREFIX + ".user-service-sync.retries";
 
+    public static final String USER_SERVICE_SYNC_ON_RETRIES_EXCEEDED_STRATEGY = TASK_ASSIGNING_PROPERTY_PREFIX + ".user-service-sync.on-retries-exceeded-strategy";
+
     public static final String USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION = TASK_ASSIGNING_PROPERTY_PREFIX + ".user-service-sync.retry-interval-duration";
 
 }

@@ -19,7 +19,6 @@ package org.kie.kogito.taskassigning.service;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -38,18 +37,24 @@ public class UserServiceAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceAdapter.class);
 
-    private static final String QUERY_ERROR = "An error was produced during users information synchronization." +
-            " Next attempt will be in a period of %s, error: %s";
+    private static final String QUERY_ERROR_RETRIES = "An error was produced during users information synchronization." +
+            " Next attempt will be in a period of {}, error: {}";
 
-    private TaskAssigningConfig config;
+    private static final String QUERY_ERROR_RETRIES_EXCEEDED = "An error was produced during users information synchronization." +
+            " The configured number of retries {} was exceeded. The configured on-retries-exceeded-strategy is {}," +
+            " next attempt will be in a period of {}, error: {}";
 
-    private TaskAssigningServiceEventConsumer taskAssigningServiceEventConsumer;
+    private final TaskAssigningConfig config;
 
-    private ExecutorService executorService;
+    private final TaskAssigningServiceEventConsumer taskAssigningServiceEventConsumer;
 
-    private UserServiceConnector userServiceConnector;
+    private final ExecutorService executorService;
+
+    private final UserServiceConnector userServiceConnector;
 
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
+
+    private int pendingRetries;
 
     public UserServiceAdapter(TaskAssigningConfig config,
             TaskAssigningServiceEventConsumer taskAssigningServiceEventConsumer,
@@ -62,56 +67,54 @@ public class UserServiceAdapter {
     }
 
     public void start() {
-        programExecution(config.getUserServiceSyncInterval(),
-                config.getUsersServiceSyncRetryInterval(),
-                config.getUserServiceSyncRetries());
+        pendingRetries = config.getUserServiceSyncRetries();
+        programNextExecution(config.getUserServiceSyncInterval());
     }
 
     public void destroy() {
         destroyed.set(true);
     }
 
-    private void programExecution(Duration nextStartTime, Duration retryInterval, int retries) {
+    private void programNextExecution(Duration nextStartTime) {
         if (!destroyed.get()) {
-            LOGGER.debug("Next users information synchronization will be executed in a period of: {} from now", nextStartTime);
             CompletableFuture.delayedExecutor(nextStartTime.toMillis(),
                     TimeUnit.MILLISECONDS,
                     executorService)
-                    .execute(() -> executeQuery(retryInterval, retries));
+                    .execute(this::executeQuery);
+        }
+    }
+
+    private void executeQuery() {
+        if (!destroyed.get()) {
+            Result result = loadUsers();
+            onQueryResult(result);
         }
     }
 
     private void onQueryResult(Result result) {
-        Duration nextStartTime;
-        if (!result.hasErrors()) {
-            taskAssigningServiceEventConsumer.accept(new UserDataEvent(result.getUsers(), ZonedDateTime.now()));
-            nextStartTime = config.getUserServiceSyncInterval();
-        } else {
-            nextStartTime = config.getUsersServiceSyncRetryInterval();
-        }
-        programExecution(nextStartTime, config.getUsersServiceSyncRetryInterval(), config.getUserServiceSyncRetries());
-    }
-
-    private void executeQuery(Duration retryInterval, int retries) {
-        int remainingRetries = retries;
-        boolean exit = false;
-        while (!destroyed.get() && !exit) {
-            try {
-                Result result = loadUsers();
-                if (result.hasErrors()) {
-                    if (remainingRetries > 0) {
-                        remainingRetries--;
-                        Thread.sleep(retryInterval.toMillis());
+        if (!destroyed.get()) {
+            Duration nextStartTime;
+            if (!result.hasError()) {
+                taskAssigningServiceEventConsumer.accept(new UserDataEvent(result.getUsers(), ZonedDateTime.now()));
+                pendingRetries = config.getUserServiceSyncRetries();
+                nextStartTime = config.getUserServiceSyncInterval();
+            } else {
+                if (pendingRetries > 0) {
+                    pendingRetries--;
+                    nextStartTime = config.getUserServiceSyncRetryInterval();
+                    LOGGER.warn(QUERY_ERROR_RETRIES, nextStartTime, result.getError().getMessage());
+                } else {
+                    pendingRetries = config.getUserServiceSyncRetries();
+                    if (config.getUserServiceSyncOnRetriesExceededStrategy() == TaskAssigningConfig.UserServiceSyncOnRetriesExceededStrategy.SYNC_ON_NEXT_INTERVAL) {
+                        nextStartTime = config.getUserServiceSyncInterval();
                     } else {
-                        exit = true;
+                        nextStartTime = config.getUserServiceSyncRetryInterval();
                     }
-                } else if (!destroyed.get()) {
-                    exit = true;
-                    onQueryResult(result);
+                    LOGGER.warn(QUERY_ERROR_RETRIES_EXCEEDED, config.getUserServiceSyncRetries(),
+                            config.getUserServiceSyncOnRetriesExceededStrategy(), nextStartTime, result.getError().getMessage());
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
             }
+            programNextExecution(nextStartTime);
         }
     }
 
@@ -120,17 +123,14 @@ public class UserServiceAdapter {
             List<User> users = userServiceConnector.findAllUsers();
             return Result.successful(users);
         } catch (Exception e) {
-            String msg = String.format(QUERY_ERROR, config.getUsersServiceSyncRetryInterval(), e.getMessage());
-            LOGGER.warn(msg);
-            LOGGER.debug(msg, e);
-            return Result.error(Collections.singletonList(e));
+            return Result.error(e);
         }
     }
 
     private static class Result {
 
         private List<User> users = new ArrayList<>();
-        private List<Exception> errors;
+        private Exception error;
 
         private Result() {
         }
@@ -141,9 +141,9 @@ public class UserServiceAdapter {
             return result;
         }
 
-        public static Result error(List<Exception> errors) {
+        public static Result error(Exception error) {
             Result result = new Result();
-            result.errors = errors;
+            result.error = error;
             return result;
         }
 
@@ -151,12 +151,12 @@ public class UserServiceAdapter {
             return users;
         }
 
-        public boolean hasErrors() {
-            return errors != null && !errors.isEmpty();
+        public boolean hasError() {
+            return error != null;
         }
 
-        public List<Exception> getErrors() {
-            return errors;
+        public Exception getError() {
+            return error;
         }
     }
 

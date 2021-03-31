@@ -62,15 +62,15 @@ public class SolutionChangesBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(SolutionChangesBuilder.class);
 
     private Map<String, User> usersById;
-    private List<AddTaskProblemFactChange> newTasksChanges = new ArrayList<>();
-    private List<RemoveTaskProblemFactChange> removedTaskChanges = new ArrayList<>();
-    private Set<TaskAssignment> removedTasksSet = new HashSet<>();
-    private List<ReleaseTaskProblemFactChange> releasedTasksChanges = new ArrayList<>();
-    private Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> assignToUserChangesByUserId = new HashMap<>();
-    private List<ProblemFactChange<TaskAssigningSolution>> taskPropertyChanges = new ArrayList<>();
-    private List<AddUserProblemFactChange> newUserChanges = new ArrayList<>();
-    private List<ProblemFactChange<TaskAssigningSolution>> updateUserChanges = new ArrayList<>();
-    private List<RemoveUserProblemFactChange> removableUserChanges = new ArrayList<>();
+    private final List<AddTaskProblemFactChange> newTasksChanges = new ArrayList<>();
+    private final List<RemoveTaskProblemFactChange> removedTaskChanges = new ArrayList<>();
+    private final Set<TaskAssignment> removedTasksSet = new HashSet<>();
+    private final List<ReleaseTaskProblemFactChange> releasedTasksChanges = new ArrayList<>();
+    private final Map<String, List<IndexedElement<AssignTaskProblemFactChange>>> assignToUserChangesByUserId = new HashMap<>();
+    private final List<ProblemFactChange<TaskAssigningSolution>> taskPropertyChanges = new ArrayList<>();
+    private final List<AddUserProblemFactChange> newUserChanges = new ArrayList<>();
+    private final List<ProblemFactChange<TaskAssigningSolution>> updateUserChanges = new ArrayList<>();
+    private final List<RemoveUserProblemFactChange> removableUserChanges = new ArrayList<>();
 
     private TaskAssigningServiceContext context;
     private UserServiceConnector userServiceConnector;
@@ -279,7 +279,6 @@ public class SolutionChangesBuilder {
     }
 
     private static boolean equalsByProperties(User a, User b) {
-        //TODO al final me quedan atributos calculados?
         return Objects.equals(a.isEnabled(), b.isEnabled()) &&
                 Objects.equals(a.getGroups(), b.getGroups()) &&
                 Objects.equals(a.getAttributes(), b.getAttributes());

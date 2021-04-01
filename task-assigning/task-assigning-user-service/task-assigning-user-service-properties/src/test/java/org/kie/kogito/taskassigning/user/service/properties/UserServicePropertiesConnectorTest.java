@@ -123,14 +123,6 @@ class UserServicePropertiesConnectorTest {
         assertThat(connector.findUser(USER1)).isEqualTo(user1);
     }
 
-    @Test
-    void destroy() {
-        connector.start();
-        assertThat(connector.findAllUsers()).hasSize(6);
-        connector.destroy();
-        assertThat(connector.findAllUsers()).isEmpty();
-    }
-
     private static User createUser(String id, Map<String, Object> attributes, String... groups) {
         Set<Group> groupsSet = Arrays.stream(groups).map(GroupImpl::new).collect(Collectors.toSet());
         return new UserImpl(id, groupsSet, attributes);

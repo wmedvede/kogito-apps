@@ -26,12 +26,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfig;
+import org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties;
 import org.kie.kogito.taskassigning.service.event.TaskAssigningServiceEventConsumer;
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
 import org.kie.kogito.taskassigning.user.service.User;
 import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfig.UserServiceSyncOnRetriesExceededStrategy.SYNC_ON_NEXT_INTERVAL;
 
 public class UserServiceAdapter {
 
@@ -52,7 +55,7 @@ public class UserServiceAdapter {
 
     private final UserServiceConnector userServiceConnector;
 
-    private final AtomicBoolean destroyed = new AtomicBoolean(false);
+    private final AtomicBoolean destroyed = new AtomicBoolean();
 
     private int pendingRetries;
 
@@ -68,7 +71,13 @@ public class UserServiceAdapter {
 
     public void start() {
         pendingRetries = config.getUserServiceSyncRetries();
-        programNextExecution(config.getUserServiceSyncInterval());
+        if (syncIsEnabled()) {
+            programNextExecution(config.getUserServiceSyncInterval());
+        } else {
+            LOGGER.warn("A lower than or equal to zero duration was configured for property " +
+                    TaskAssigningConfigProperties.USER_SERVICE_SYNC_INTERVAL + ": {}," +
+                    " users information synchronization will be disabled.", config.getUserServiceSyncInterval());
+        }
     }
 
     public void destroy() {
@@ -77,11 +86,15 @@ public class UserServiceAdapter {
 
     private void programNextExecution(Duration nextStartTime) {
         if (!destroyed.get()) {
-            CompletableFuture.delayedExecutor(nextStartTime.toMillis(),
-                    TimeUnit.MILLISECONDS,
-                    executorService)
-                    .execute(this::executeQuery);
+            scheduleExecution(nextStartTime, this::executeQuery);
         }
+    }
+
+    void scheduleExecution(Duration nextStartTime, Runnable command) {
+        CompletableFuture.delayedExecutor(nextStartTime.toMillis(),
+                TimeUnit.MILLISECONDS,
+                executorService)
+                .execute(command);
     }
 
     private void executeQuery() {
@@ -105,7 +118,7 @@ public class UserServiceAdapter {
                     LOGGER.warn(QUERY_ERROR_RETRIES, nextStartTime, result.getError().getMessage());
                 } else {
                     pendingRetries = config.getUserServiceSyncRetries();
-                    if (config.getUserServiceSyncOnRetriesExceededStrategy() == TaskAssigningConfig.UserServiceSyncOnRetriesExceededStrategy.SYNC_ON_NEXT_INTERVAL) {
+                    if (config.getUserServiceSyncOnRetriesExceededStrategy() == SYNC_ON_NEXT_INTERVAL) {
                         nextStartTime = config.getUserServiceSyncInterval();
                     } else {
                         nextStartTime = config.getUserServiceSyncRetryInterval();
@@ -116,6 +129,11 @@ public class UserServiceAdapter {
             }
             programNextExecution(nextStartTime);
         }
+    }
+
+    private boolean syncIsEnabled() {
+        return !config.getUserServiceSyncInterval().isNegative() &&
+                !config.getUserServiceSyncInterval().isZero();
     }
 
     private Result loadUsers() {

@@ -43,6 +43,7 @@ import org.kie.kogito.taskassigning.service.config.TaskAssigningConfig;
 import org.kie.kogito.taskassigning.service.config.TaskAssigningConfigValidator;
 import org.kie.kogito.taskassigning.service.event.BufferedTaskAssigningServiceEventConsumer;
 import org.kie.kogito.taskassigning.service.event.DataEvent;
+import org.kie.kogito.taskassigning.service.event.TaskAssigningServiceEventConsumer;
 import org.kie.kogito.taskassigning.service.event.TaskDataEvent;
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
 import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
@@ -82,10 +83,6 @@ public class TaskAssigningService {
     @Inject
     TaskServiceConnector taskServiceConnector;
 
-    UserServiceConnector userServiceConnector;
-
-    UserServiceAdapter userServiceAdapter;
-
     @Inject
     BufferedTaskAssigningServiceEventConsumer serviceEventConsumer;
 
@@ -94,6 +91,10 @@ public class TaskAssigningService {
 
     @Inject
     TaskAssigningServiceHelper serviceHelper;
+
+    private UserServiceConnector userServiceConnector;
+
+    private UserServiceAdapter userServiceAdapter;
 
     private SolverExecutor solverExecutor;
 
@@ -134,7 +135,7 @@ public class TaskAssigningService {
         solutionDataLoader.start(this::onSolutionDataLoad,
                 true, true,
                 config.getDataLoaderRetryInterval(), config.getDataLoaderRetries(), config.getDataLoaderPageSize());
-        userServiceAdapter = new UserServiceAdapter(config, serviceEventConsumer, managedExecutor, userServiceConnector);
+        userServiceAdapter = createUserServiceAdapter(config, serviceEventConsumer, managedExecutor, userServiceConnector);
     }
 
     /**
@@ -315,6 +316,7 @@ public class TaskAssigningService {
             context.setProcessedChangeSet(context.getCurrentChangeSetId());
             List<ProblemFactChange<TaskAssigningSolution>> pendingEventsChanges = null;
             if (applyingPlanningExecutionResult.get()) {
+                // solution is the result of applying the pinning changes corresponding to the last executed plan
                 applyingPlanningExecutionResult.set(false);
                 List<DataEvent<?>> pendingEvents = pollEvents();
                 List<TaskDataEvent> pendingTaskDataEvents = filterNewestTaskEventsInContext(context, pendingEvents);
@@ -475,5 +477,10 @@ public class TaskAssigningService {
 
     SolutionDataLoader createSolutionDataLoader(TaskServiceConnector taskServiceConnector, UserServiceConnector userServiceConnector) {
         return new SolutionDataLoader(taskServiceConnector, userServiceConnector);
+    }
+
+    UserServiceAdapter createUserServiceAdapter(TaskAssigningConfig config, TaskAssigningServiceEventConsumer serviceEventConsumer,
+            ManagedExecutor managedExecutor, UserServiceConnector userServiceConnector) {
+        return new UserServiceAdapter(config, serviceEventConsumer, managedExecutor, userServiceConnector);
     }
 }

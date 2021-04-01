@@ -45,8 +45,4 @@ public interface UserServiceConnector {
      */
     User findUser(String id);
 
-    /**
-     * Invoked by the task assigning service as part of the shutdown procedure.
-     */
-    void destroy();
 }

@@ -56,9 +56,9 @@ public class UserServicePropertiesConnector implements UserServiceConnector {
 
     public static final String NAME = "PropertiesConnector";
 
-    private Map<String, User> users = new HashMap<>();
+    private final Map<String, User> users = new HashMap<>();
 
-    private Config config;
+    private final Config config;
 
     @Inject
     public UserServicePropertiesConnector(Config config) {
@@ -110,9 +110,4 @@ public class UserServicePropertiesConnector implements UserServiceConnector {
         return users.get(id);
     }
 
-    //TODO ver si dejo el destroy este porque al final podria dar por saco....
-    @Override
-    public void destroy() {
-        users.clear();
-    }
 }

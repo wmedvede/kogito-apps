@@ -56,7 +56,7 @@ public class TaskAssigningConfig {
 
     public enum UserServiceSyncOnRetriesExceededStrategy {
         SYNC_ON_NEXT_INTERVAL,
-        SYNC_AGAIN
+        SYNC_IMMEDIATELY
     }
 
     @Inject
@@ -116,12 +116,12 @@ public class TaskAssigningConfig {
     int userServiceSyncRetries;
 
     @Inject
-    @ConfigProperty(name = USER_SERVICE_SYNC_ON_RETRIES_EXCEEDED_STRATEGY, defaultValue = "SYNC_AGAIN")
-    UserServiceSyncOnRetriesExceededStrategy userServiceSyncOnRetriesExceededStrategy;
+    @ConfigProperty(name = USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION, defaultValue = "PT20S")
+    Duration userServiceSyncRetryInterval;
 
     @Inject
-    @ConfigProperty(name = USER_SERVICE_SYNC_RETRY_INTERVAL_DURATION, defaultValue = "PT5S")
-    Duration userServiceSyncRetryInterval;
+    @ConfigProperty(name = USER_SERVICE_SYNC_ON_RETRIES_EXCEEDED_STRATEGY, defaultValue = "SYNC_IMMEDIATELY")
+    UserServiceSyncOnRetriesExceededStrategy userServiceSyncOnRetriesExceededStrategy;
 
     public boolean isOidcTenantEnabled() {
         return oidcTenantEnabled;

@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TaskAssigningServiceContext {
 
@@ -44,10 +45,33 @@ public class TaskAssigningServiceContext {
         }
     }
 
-    private AtomicLong changeSetIds = new AtomicLong();
-    private AtomicLong currentChangeSetId = new AtomicLong();
-    private AtomicLong lastProcessedChangeSetId = new AtomicLong(-1);
-    private Map<String, TaskContext> taskContextMap = new ConcurrentHashMap<>();
+    public static class StatusInfo {
+        private TaskAssigningService.Status status = TaskAssigningService.Status.STARTING;
+        private Message statusMessage;
+
+        public StatusInfo(TaskAssigningService.Status status) {
+            this.status = status;
+        }
+
+        public StatusInfo(TaskAssigningService.Status status, Message statusMessage) {
+            this.status = status;
+            this.statusMessage = statusMessage;
+        }
+
+        public TaskAssigningService.Status getStatus() {
+            return status;
+        }
+
+        public Message getStatusMessage() {
+            return statusMessage;
+        }
+    }
+
+    private final AtomicLong changeSetIds = new AtomicLong();
+    private final AtomicLong currentChangeSetId = new AtomicLong();
+    private final AtomicLong lastProcessedChangeSetId = new AtomicLong(-1);
+    private final Map<String, TaskContext> taskContextMap = new ConcurrentHashMap<>();
+    private final AtomicReference<StatusInfo> statusInfo = new AtomicReference<>(new StatusInfo(TaskAssigningService.Status.STARTING));
 
     public long getCurrentChangeSetId() {
         return currentChangeSetId.get();
@@ -96,5 +120,21 @@ public class TaskAssigningServiceContext {
     public boolean isNewTaskEventTime(String taskId, ZonedDateTime taskEventTime) {
         ZonedDateTime lastTaskEventTime = getTaskLastEventTime(taskId);
         return lastTaskEventTime == null || taskEventTime.isAfter(lastTaskEventTime);
+    }
+
+    public TaskAssigningService.Status getStatus() {
+        return statusInfo.get().getStatus();
+    }
+
+    public void setStatus(TaskAssigningService.Status status) {
+        statusInfo.set(new StatusInfo(status));
+    }
+
+    public void setStatus(TaskAssigningService.Status status, Message statusMessage) {
+        statusInfo.set(new StatusInfo(status, statusMessage));
+    }
+
+    public StatusInfo getStatusInfo() {
+        return statusInfo.get();
     }
 }

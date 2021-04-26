@@ -25,28 +25,27 @@ import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//TODO esta clase se va!!!
 @ApplicationScoped
-public class TaskAssigningServiceHelper {
+public class UserServiceConnectorLocator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskAssigningServiceHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceConnectorLocator.class);
+
+    private final UserServiceConnector instance;
 
     @Inject
-    UserServiceConnectorRegistry userServiceConnectorRegistry;
-
-    @Inject
-    TaskAssigningConfig config;
-
-    public UserServiceConnector validateAndGetUserServiceConnector() {
-        String connectorName = config.getUserServiceConnector();
-        UserServiceConnector connector = userServiceConnectorRegistry.get(connectorName);
-        if (connector == null) {
+    public UserServiceConnectorLocator(UserServiceConnectorRegistry userServiceConnectorRegistry,
+            TaskAssigningConfig config) {
+        instance = userServiceConnectorRegistry.get(config.getUserServiceConnector());
+        if (instance == null) {
             throw new IllegalArgumentException("No user service connector was found for the configured name " +
-                    TaskAssigningConfigProperties.USER_SERVICE_CONNECTOR + " = " + connectorName);
+                    TaskAssigningConfigProperties.USER_SERVICE_CONNECTOR + " = " + config.getUserServiceConnector());
         }
-        if (TaskAssigningConfig.DEFAULT_USER_SERVICE_CONNECTOR.equals(connectorName)) {
-            LOGGER.warn("The default user service connector: {} should only be used in development or testing environments.", connectorName);
+        if (TaskAssigningConfig.DEFAULT_USER_SERVICE_CONNECTOR.equals(config.getUserServiceConnector())) {
+            LOGGER.warn("The default user service connector: {} should only be used in development or testing environments.", config.getUserServiceConnector());
         }
-        return connector;
+    }
+
+    public UserServiceConnector getInstance() {
+        return instance;
     }
 }

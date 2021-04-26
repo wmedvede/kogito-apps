@@ -48,7 +48,8 @@ class ReactiveMessagingEventConsumerTest {
     @Timeout(10)
     void onUserTaskEvent() throws Exception {
         TaskAssigningServiceEventConsumer taskAssigningServiceEventConsumer = mock(TaskAssigningServiceEventConsumer.class);
-        ReactiveMessagingEventConsumer consumer = spy(new ReactiveMessagingEventConsumer(taskAssigningServiceEventConsumer));
+        //TODO arreglar esto
+        ReactiveMessagingEventConsumer consumer = spy(new ReactiveMessagingEventConsumer(taskAssigningServiceEventConsumer, null));
         UserTaskEvent event = new UserTaskEvent();
         event.setTaskId(TASK_ID);
         event.setLastUpdate(LAST_MODIFICATION_DATE);

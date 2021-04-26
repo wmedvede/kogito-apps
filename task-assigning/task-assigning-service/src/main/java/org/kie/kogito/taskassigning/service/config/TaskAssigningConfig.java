@@ -25,6 +25,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.kie.kogito.taskassigning.service.UserServiceConnectorRegistry;
+import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.CLIENT_AUTH_PASSWORD;
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.CLIENT_AUTH_USER;
@@ -123,6 +125,9 @@ public class TaskAssigningConfig {
     @ConfigProperty(name = USER_SERVICE_SYNC_ON_RETRIES_EXCEEDED_STRATEGY, defaultValue = "SYNC_IMMEDIATELY")
     UserServiceSyncOnRetriesExceededStrategy userServiceSyncOnRetriesExceededStrategy;
 
+    @Inject
+    UserServiceConnectorRegistry userServiceConnectorRegistry;
+
     public boolean isOidcTenantEnabled() {
         return oidcTenantEnabled;
     }
@@ -207,6 +212,10 @@ public class TaskAssigningConfig {
 
     public String getUserServiceConnector() {
         return userServiceConnector;
+    }
+
+    public UserServiceConnector getUserServiceConnectorInstance() {
+        return userServiceConnectorRegistry.get(getUserServiceConnector());
     }
 
     public Duration getUserServiceSyncInterval() {

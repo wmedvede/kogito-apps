@@ -51,8 +51,8 @@ public class SolutionDataLoaderFaultTolerant {
 
     public static class Result {
 
-        private List<TaskData> tasks;
-        private List<User> users;
+        private final List<TaskData> tasks;
+        private final List<User> users;
 
         public Result(List<TaskData> tasks, List<User> users) {
             this.tasks = tasks;
@@ -114,9 +114,9 @@ public class SolutionDataLoaderFaultTolerant {
         } catch (Exception e) {
             String msg;
             if (includeTasks && tasks == null) {
-                msg = String.format(SERVICE_ACCESS_ERROR, " Task Service", e.getMessage());
+                msg = String.format(SERVICE_ACCESS_ERROR, "Task Service", e.getMessage());
             } else {
-                msg = String.format(SERVICE_ACCESS_ERROR, " User Service", e.getMessage());
+                msg = String.format(SERVICE_ACCESS_ERROR, "User Service", e.getMessage());
             }
             LOGGER.warn(msg);
             throw new TaskAssigningException(msg, e);

@@ -142,7 +142,7 @@ public class UserServiceAdapter {
             durationUnit = ChronoUnit.MINUTES)
     @Timeout(value = 10,
             unit = ChronoUnit.MINUTES)
-    private CompletionStage<List<User>> loadUsersData() {
+    public CompletionStage<List<User>> loadUsersData() {
         CompletableFuture<List<User>> future = new CompletableFuture<>();
         try {
             future.complete(userServiceConnector.findAllUsers());

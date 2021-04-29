@@ -18,7 +18,7 @@ package org.kie.kogito.taskassigning.service;
 
 import java.time.ZonedDateTime;
 
-public class Message {
+public class ServiceMessage {
 
     public enum Severity {
         INFO,
@@ -30,7 +30,7 @@ public class Message {
     private ZonedDateTime timestamp;
     private String value;
 
-    private Message(Severity severity, ZonedDateTime timestamp, String value) {
+    private ServiceMessage(Severity severity, ZonedDateTime timestamp, String value) {
         this.severity = severity;
         this.timestamp = timestamp;
         this.value = value;
@@ -48,15 +48,15 @@ public class Message {
         return value;
     }
 
-    public static Message info(String value) {
-        return new Message(Severity.INFO, ZonedDateTime.now(), value);
+    public static ServiceMessage info(String value) {
+        return new ServiceMessage(Severity.INFO, ZonedDateTime.now(), value);
     }
 
-    public static Message warn(String value) {
-        return new Message(Severity.WARN, ZonedDateTime.now(), value);
+    public static ServiceMessage warn(String value) {
+        return new ServiceMessage(Severity.WARN, ZonedDateTime.now(), value);
     }
 
-    public static Message error(String value) {
-        return new Message(Severity.ERROR, ZonedDateTime.now(), value);
+    public static ServiceMessage error(String value) {
+        return new ServiceMessage(Severity.ERROR, ZonedDateTime.now(), value);
     }
 }

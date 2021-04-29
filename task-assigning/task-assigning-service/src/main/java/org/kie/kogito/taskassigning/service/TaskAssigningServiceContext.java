@@ -45,33 +45,11 @@ public class TaskAssigningServiceContext {
         }
     }
 
-    public static class StatusInfo {
-        private TaskAssigningService.Status status = TaskAssigningService.Status.STARTING;
-        private Message statusMessage;
-
-        public StatusInfo(TaskAssigningService.Status status) {
-            this.status = status;
-        }
-
-        public StatusInfo(TaskAssigningService.Status status, Message statusMessage) {
-            this.status = status;
-            this.statusMessage = statusMessage;
-        }
-
-        public TaskAssigningService.Status getStatus() {
-            return status;
-        }
-
-        public Message getStatusMessage() {
-            return statusMessage;
-        }
-    }
-
     private final AtomicLong changeSetIds = new AtomicLong();
     private final AtomicLong currentChangeSetId = new AtomicLong();
     private final AtomicLong lastProcessedChangeSetId = new AtomicLong(-1);
     private final Map<String, TaskContext> taskContextMap = new ConcurrentHashMap<>();
-    private final AtomicReference<StatusInfo> statusInfo = new AtomicReference<>(new StatusInfo(TaskAssigningService.Status.STARTING));
+    private final AtomicReference<ServiceStatusInfo> statusInfo = new AtomicReference<>(new ServiceStatusInfo(ServiceStatus.STARTING));
 
     public long getCurrentChangeSetId() {
         return currentChangeSetId.get();
@@ -122,19 +100,19 @@ public class TaskAssigningServiceContext {
         return lastTaskEventTime == null || taskEventTime.isAfter(lastTaskEventTime);
     }
 
-    public TaskAssigningService.Status getStatus() {
+    public ServiceStatus getStatus() {
         return statusInfo.get().getStatus();
     }
 
-    public void setStatus(TaskAssigningService.Status status) {
-        statusInfo.set(new StatusInfo(status));
+    public void setStatus(ServiceStatus status) {
+        statusInfo.set(new ServiceStatusInfo(status));
     }
 
-    public void setStatus(TaskAssigningService.Status status, Message statusMessage) {
-        statusInfo.set(new StatusInfo(status, statusMessage));
+    public void setStatus(ServiceStatus status, ServiceMessage statusMessage) {
+        statusInfo.set(new ServiceStatusInfo(status, statusMessage));
     }
 
-    public StatusInfo getStatusInfo() {
+    public ServiceStatusInfo getStatusInfo() {
         return statusInfo.get();
     }
 }

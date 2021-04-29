@@ -43,7 +43,10 @@ public class Task {
     private Set<String> excludedUsers = new HashSet<>();
 
     private ZonedDateTime started;
+    //TODO, can be removed since completed tasks are removed from solution, is allways null.
     private ZonedDateTime completed;
+    //TODO, si dejo ésto implica un change cada vez q una tarea se mueve de estado
+    //Pero ojo, si ya estoy detectandoel cambio de estado quiere decir q ya estoy cambiando con cada cambio de estado
     private ZonedDateTime lastUpdate;
 
     private String endpoint;

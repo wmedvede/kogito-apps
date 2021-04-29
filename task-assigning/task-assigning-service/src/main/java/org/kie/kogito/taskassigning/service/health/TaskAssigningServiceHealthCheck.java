@@ -25,15 +25,16 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
-import org.kie.kogito.taskassigning.service.Message;
+import org.kie.kogito.taskassigning.service.ServiceMessage;
+import org.kie.kogito.taskassigning.service.ServiceStatus;
+import org.kie.kogito.taskassigning.service.ServiceStatusInfo;
 import org.kie.kogito.taskassigning.service.TaskAssigningService;
-import org.kie.kogito.taskassigning.service.TaskAssigningServiceContext;
 
 @ApplicationScoped
 public class TaskAssigningServiceHealthCheck {
 
-    public static final String SERVER_STATUS = "server-status";
-    public static final String SERVER_MESSAGE = "server-message";
+    public static final String SERVICE_STATUS = "service-status";
+    public static final String SERVICE_STATUS_MESSAGE = "service-status-message";
     public static final String LIVENESS_NAME = "Task Assigning Service - liveness check";
     public static final String READINESS_NAME = "Task Assigning Service - readiness check";
 
@@ -44,10 +45,10 @@ public class TaskAssigningServiceHealthCheck {
     @Liveness
     HealthCheck livenessCheck() {
         return () -> {
-            TaskAssigningServiceContext.StatusInfo statusInfo = service.getContext().getStatusInfo();
+            ServiceStatusInfo statusInfo = service.getContext().getStatusInfo();
             HealthCheckResponseBuilder builder = newBuilder(LIVENESS_NAME, statusInfo);
-            if (statusInfo.getStatus() == TaskAssigningService.Status.ERROR ||
-                    statusInfo.getStatus() == TaskAssigningService.Status.SHUTDOWN) {
+            if (statusInfo.getStatus() == ServiceStatus.ERROR ||
+                    statusInfo.getStatus() == ServiceStatus.SHUTDOWN) {
                 return builder.down().build();
             } else {
                 return builder.up().build();
@@ -59,9 +60,9 @@ public class TaskAssigningServiceHealthCheck {
     @Readiness
     HealthCheck readinessCheck() {
         return () -> {
-            TaskAssigningServiceContext.StatusInfo statusInfo = service.getContext().getStatusInfo();
+            ServiceStatusInfo statusInfo = service.getContext().getStatusInfo();
             HealthCheckResponseBuilder builder = newBuilder(READINESS_NAME, statusInfo);
-            if (statusInfo.getStatus() == TaskAssigningService.Status.READY) {
+            if (statusInfo.getStatus() == ServiceStatus.READY) {
                 return builder.up().build();
             } else {
                 return builder.down().build();
@@ -69,17 +70,17 @@ public class TaskAssigningServiceHealthCheck {
         };
     }
 
-    private static HealthCheckResponseBuilder newBuilder(String name, TaskAssigningServiceContext.StatusInfo info) {
+    private static HealthCheckResponseBuilder newBuilder(String name, ServiceStatusInfo statusInfo) {
         HealthCheckResponseBuilder builder = HealthCheckResponse.builder()
                 .name(name)
-                .withData(SERVER_STATUS, info.getStatus().name());
-        if (info.getStatusMessage() != null) {
-            builder.withData(SERVER_MESSAGE, buildServerMessage(info.getStatusMessage()));
+                .withData(SERVICE_STATUS, statusInfo.getStatus().name());
+        if (statusInfo.getStatusMessage() != null) {
+            builder.withData(SERVICE_STATUS_MESSAGE, buildServerMessage(statusInfo.getStatusMessage()));
         }
         return builder;
     }
 
-    private static String buildServerMessage(Message message) {
+    private static String buildServerMessage(ServiceMessage message) {
         return String.format("[%s]:[%s]:[%s]", message.getSeverity().name(), message.getTimestamp(), message.getValue());
     }
 }

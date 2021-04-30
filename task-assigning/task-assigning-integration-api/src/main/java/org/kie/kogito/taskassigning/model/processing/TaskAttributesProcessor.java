@@ -16,5 +16,5 @@
 
 package org.kie.kogito.taskassigning.model.processing;
 
-public interface TaskAttributesProcessor extends EntityAttributesProcessor<TaskInfo> {
+public interface TaskAttributesProcessor extends AttributesProcessor<TaskInfo> {
 }

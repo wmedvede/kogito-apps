@@ -33,19 +33,8 @@ public class UserUtil {
     private UserUtil() {
     }
 
-    //TODO remove
-    public static User fromExternalUser(org.kie.kogito.taskassigning.user.service.User externalUser) {
-        final User user = new User(externalUser.getId(), true);
-        final Set<Group> groups = new HashSet<>();
-        user.setGroups(groups);
-        if (externalUser.getGroups() != null) {
-            externalUser.getGroups().forEach(externalGroup -> groups.add(new Group(externalGroup.getId())));
-        }
-        user.setAttributes(externalUser.getAttributes());
-        return user;
-    }
-
-    public static User fromExternalUser(org.kie.kogito.taskassigning.user.service.User externalUser, AttributesProcessorRegistry processorRegistry) {
+    public static User fromExternalUser(org.kie.kogito.taskassigning.user.service.User externalUser,
+            AttributesProcessorRegistry processorRegistry) {
         final User user = new User(externalUser.getId(), true);
         final Set<Group> groups = new HashSet<>();
         user.setGroups(groups);

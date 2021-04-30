@@ -46,7 +46,6 @@ import org.kie.kogito.taskassigning.service.event.TaskDataEvent;
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
 import org.kie.kogito.taskassigning.service.messaging.ReactiveMessagingEventConsumer;
 import org.kie.kogito.taskassigning.service.processing.AttributesProcessorRegistry;
-import org.kie.kogito.taskassigning.service.test.SolutionDataLoaderFaultTolerant;
 import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.optaplanner.core.api.solver.SolverFactory;
@@ -87,9 +86,6 @@ public class TaskAssigningService {
     ManagedExecutor managedExecutor;
 
     @Inject
-    TaskServiceConnector taskServiceConnector;
-
-    @Inject
     BufferedTaskAssigningServiceEventConsumer serviceEventConsumer;
 
     @Inject
@@ -99,15 +95,16 @@ public class TaskAssigningService {
     ClientServices clientServices;
 
     @Inject
-    UserServiceConnectorLocator userServiceConnectorLocator;
+    UserServiceConnector userServiceConnector;
 
-    private UserServiceConnector userServiceConnector;
+    @Inject
+    UserServiceConnectorDelegate userServiceConnectorDelegate;
 
     @Inject
     UserServiceAdapter userServiceAdapter;
 
     @Inject
-    SolutionDataLoaderFaultTolerant solutionDataLoaderTest;
+    SolutionDataLoader solutionDataLoader;
 
     @Inject
     AttributesProcessorRegistry processorRegistry;
@@ -159,7 +156,7 @@ public class TaskAssigningService {
      *
      * @param result contains the requested data for creating the initial solution.
      */
-    void onSolutionDataLoad(SolutionDataLoaderFaultTolerant.Result result) {
+    void onSolutionDataLoad(SolutionDataLoader.Result result) {
         lock.lock();
         try {
             LOGGER.debug("Solution data loading has finished, startingFromEvents: {}, includeTasks: {}"
@@ -271,7 +268,7 @@ public class TaskAssigningService {
                 List<ProblemFactChange<TaskAssigningSolution>> changes = SolutionChangesBuilder.create()
                         .forSolution(currentSolution.get())
                         .withContext(context)
-                        .withUserServiceConnector(userServiceConnector)
+                        .withUserServiceConnector(userServiceConnectorDelegate)
                         .withProcessors(processorRegistry)
                         .fromTasksData(fromTaskDataEvents(newTaskDataEvents))
                         .fromUserDataEvent(userDataEvent)
@@ -346,7 +343,7 @@ public class TaskAssigningService {
                     pendingEventsChanges = SolutionChangesBuilder.create()
                             .forSolution(solution)
                             .withContext(context)
-                            .withUserServiceConnector(userServiceConnector)
+                            .withUserServiceConnector(userServiceConnectorDelegate)
                             .withProcessors(processorRegistry)
                             .fromTasksData(fromTaskDataEvents(pendingTaskDataEvents))
                             .fromUserDataEvent(pendingUserDataEvent)
@@ -465,7 +462,7 @@ public class TaskAssigningService {
     }
 
     private void loadSolutionData(boolean includeTasks, boolean includeUsers, int pageSize) {
-        solutionDataLoaderTest.loadSolutionData(includeTasks, includeUsers, pageSize)
+        solutionDataLoader.loadSolutionData(includeTasks, includeUsers, pageSize)
                 .thenAccept(this::onSolutionDataLoad)
                 .exceptionally(throwable -> {
                     onSolutionDataLoadFailure(throwable);
@@ -498,7 +495,6 @@ public class TaskAssigningService {
     }
 
     private void validateUserService() {
-        userServiceConnector = userServiceConnectorLocator.getInstance();
         userServiceConnector.start();
     }
 
@@ -536,10 +532,5 @@ public class TaskAssigningService {
 
     PlanningExecutor createPlanningExecutor(ClientServices clientServices, TaskAssigningConfig config) {
         return new PlanningExecutor(clientServices, config);
-    }
-
-    //TODO remove
-    SolutionDataLoader createSolutionDataLoader(TaskServiceConnector taskServiceConnector, UserServiceConnector userServiceConnector) {
-        return new SolutionDataLoader(taskServiceConnector, userServiceConnector);
     }
 }

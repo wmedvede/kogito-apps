@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kie.kogito.taskassigning.core.model.solver.realtime;
 
-import org.kie.kogito.taskassigning.core.model.Task;
-import org.kie.kogito.taskassigning.core.model.TaskAssignment;
+package org.kie.kogito.taskassigning.user.service;
 
-public class TaskPriorityChangeProblemFactChange extends AbstractTaskPropertyChangeProblemFactChange {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-    private String newPriority;
+import javax.inject.Qualifier;
 
-    public TaskPriorityChangeProblemFactChange(TaskAssignment taskAssignment, String newPriority) {
-        super(taskAssignment);
-        this.newPriority = newPriority;
-    }
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    @Override
-    protected void applyChange(Task task) {
-        task.setPriority(newPriority);
-    }
+@Qualifier
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD, FIELD, PARAMETER })
+public @interface UserServiceConnectorQualifier {
+    String value();
 }

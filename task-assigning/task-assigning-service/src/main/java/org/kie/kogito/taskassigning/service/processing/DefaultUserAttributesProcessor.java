@@ -20,42 +20,42 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.kie.kogito.taskassigning.model.processing.TaskAttributesProcessor;
-import org.kie.kogito.taskassigning.model.processing.TaskInfo;
+import org.kie.kogito.taskassigning.model.processing.UserAttributesProcessor;
+import org.kie.kogito.taskassigning.user.service.User;
 
 import static org.kie.kogito.taskassigning.service.config.TaskAssigningConfigProperties.TASK_ASSIGNING_PROPERTY_PREFIX;
 
 @ApplicationScoped
-public class DefaultTaskAttributesProcessor extends AbstractDefaultAttributesProcessor<TaskInfo> implements TaskAttributesProcessor {
+public class DefaultUserAttributesProcessor extends AbstractDefaultAttributesProcessor<User> implements UserAttributesProcessor {
 
-    private static final String PROCESSOR_PREFIX = TASK_ASSIGNING_PROPERTY_PREFIX + ".default-task-attributes-processor";
+    private static final String PROCESSOR_PREFIX = TASK_ASSIGNING_PROPERTY_PREFIX + ".default-user-attributes-processor";
 
     private static final String PROCESSOR_ENABLED_PROPERTY_NAME = PROCESSOR_PREFIX + ".enabled";
 
-    private static final String TASK_SKILLS_ATTRIBUTE_PROPERTY_NAME = PROCESSOR_PREFIX + ".skills";
+    private static final String USER_SKILLS_ATTRIBUTE_PROPERTY_NAME = PROCESSOR_PREFIX + ".skills";
 
-    private static final String TASK_AFFINITIES_ATTRIBUTE_PROPERTY_NAME = PROCESSOR_PREFIX + ".affinities";
+    private static final String USER_AFFINITIES_ATTRIBUTE_PROPERTY_NAME = PROCESSOR_PREFIX + ".affinities";
 
     @Inject
     @ConfigProperty(name = PROCESSOR_ENABLED_PROPERTY_NAME, defaultValue = "true")
     boolean enabled;
 
     @Inject
-    @ConfigProperty(name = TASK_SKILLS_ATTRIBUTE_PROPERTY_NAME, defaultValue = "skills")
+    @ConfigProperty(name = USER_SKILLS_ATTRIBUTE_PROPERTY_NAME, defaultValue = "skills")
     String skillsAttribute;
 
     @Inject
-    @ConfigProperty(name = TASK_AFFINITIES_ATTRIBUTE_PROPERTY_NAME, defaultValue = "affinities")
+    @ConfigProperty(name = USER_AFFINITIES_ATTRIBUTE_PROPERTY_NAME, defaultValue = "affinities")
     String affinitiesAttribute;
 
     @Override
-    protected Object getSkillsValue(TaskInfo taskInfo) {
-        return taskInfo.getInputs() != null ? taskInfo.getInputs().get(skillsAttribute) : null;
+    protected Object getSkillsValue(User user) {
+        return user.getAttributes() != null ? user.getAttributes().get(skillsAttribute) : null;
     }
 
     @Override
-    protected Object getAffinitiesValue(TaskInfo taskInfo) {
-        return taskInfo.getInputs() != null ? taskInfo.getInputs().get(affinitiesAttribute) : null;
+    protected Object getAffinitiesValue(User user) {
+        return user.getAttributes() != null ? user.getAttributes().get(affinitiesAttribute) : null;
     }
 
     @Override

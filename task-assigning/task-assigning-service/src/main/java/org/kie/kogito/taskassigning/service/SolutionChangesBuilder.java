@@ -42,7 +42,7 @@ import org.kie.kogito.taskassigning.core.model.solver.realtime.UserPropertyChang
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
 import org.kie.kogito.taskassigning.service.processing.AttributesProcessorRegistry;
 import org.kie.kogito.taskassigning.service.util.IndexedElement;
-import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
+import org.kie.kogito.taskassigning.service.util.TraceUtil;
 import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +73,7 @@ public class SolutionChangesBuilder {
     private final List<ProblemFactChange<TaskAssigningSolution>> totalChanges = new ArrayList<>();
 
     private TaskAssigningServiceContext context;
-    private UserServiceConnector userServiceConnector;
+    private UserServiceConnectorDelegate userServiceConnector;
     private TaskAssigningSolution solution;
     private List<TaskData> taskDataList;
     private UserDataEvent userDataEvent;
@@ -91,7 +91,7 @@ public class SolutionChangesBuilder {
         return this;
     }
 
-    public SolutionChangesBuilder withUserServiceConnector(UserServiceConnector userServiceConnector) {
+    public SolutionChangesBuilder withUserServiceConnector(UserServiceConnectorDelegate userServiceConnector) {
         this.userServiceConnector = userServiceConnector;
         return this;
     }
@@ -229,21 +229,19 @@ public class SolutionChangesBuilder {
         } else {
             LOGGER.debug("User {} was not found in current solution, it'll we looked up in the external user system .", userId);
             User user;
-            org.kie.kogito.taskassigning.user.service.User externalUser = null;
+            org.kie.kogito.taskassigning.user.service.User externalUser;
             try {
                 externalUser = userServiceConnector.findUser(userId);
             } catch (Exception e) {
-                //TODO throw this exception!!!!!!
-                LOGGER.warn("An error was produced while querying user {} from the external user system.", userId);
+                throw new TaskAssigningException("An error was produced while querying user: " + userId + " in the external user system.", e);
             }
             if (externalUser != null) {
                 user = fromExternalUser(externalUser, processorRegistry);
             } else {
                 // We add it by convention, since the kogito runtime supports the assignment of tasks to whatever user id.
                 LOGGER.warn("User {} was not found in the external user system, it looks like it's a manual" +
-                        " assignment from the kogito tasks administration to a non existing user or an error was produced when" +
-                        " querying the external user system (in this last case the user will be updated on next synchronization)." +
-                        " It'll be added to the solution to respect the assignment.", userId);
+                        " assignment from the kogito tasks administration to a non existing user. It'll be added to the" +
+                        " solution to respect the assignment.", userId);
                 user = new User(userId);
             }
             return user;
@@ -308,12 +306,8 @@ public class SolutionChangesBuilder {
     private void traceChanges() {
         if (LOGGER.isTraceEnabled()) {
             if (!totalChanges.isEmpty()) {
-                //TODO acomodar el trace éste
-                /*
-                 * TraceUtil.traceProgrammedChanges(LOGGER, removedTaskChanges, releasedTasksChanges, assignToUserChangesByUserId,
-                 * taskPropertyChanges, newTasksChanges, newUserChanges, updateUserChanges, removableUserChanges);
-                 * 
-                 */
+                TraceUtil.traceProgrammedChanges(LOGGER, removedTaskChanges, releasedTasksChanges, assignToUserChangesByUserId,
+                        taskPropertyChanges, newTasksChanges, newUserChanges, updateUserChanges, removableUserChanges);
             } else {
                 LOGGER.trace("No changes has been calculated.");
             }

@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.service.processing;
+package org.kie.kogito.taskassigning.service.config;
 
-import java.util.Map;
+import javax.enterprise.util.AnnotationLiteral;
 
-import javax.enterprise.context.ApplicationScoped;
+import org.kie.kogito.taskassigning.user.service.UserServiceConnectorQualifier;
 
-import org.kie.kogito.taskassigning.core.model.DefaultLabels;
-import org.kie.kogito.taskassigning.model.processing.UserAttributesProcessor;
-import org.kie.kogito.taskassigning.user.service.User;
+public class UserServiceConnectorQualifierImpl
+        extends AnnotationLiteral<UserServiceConnectorQualifier> implements UserServiceConnectorQualifier {
 
-@ApplicationScoped
-public class DefaultUserSkillsAttributesProcessor implements UserAttributesProcessor {
+    private final String value;
 
-    @Override
-    public int getPriority() {
-        return 0;
+    public UserServiceConnectorQualifierImpl(String value) {
+        this.value = value;
     }
 
     @Override
-    public void process(User entity, Map<String, Object> targetAttributes) {
-        targetAttributes.put(DefaultLabels.SKILLS.name(), "default user skills");
+    public String value() {
+        return value;
     }
 }

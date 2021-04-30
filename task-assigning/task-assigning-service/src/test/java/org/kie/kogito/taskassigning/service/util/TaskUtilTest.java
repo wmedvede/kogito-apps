@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.kie.kogito.taskassigning.service.TestUtil.parseZonedDateTime;
 import static org.mockito.Mockito.mock;
 
+//TODO revisar este test porque meti lo de los tributos.
 class TaskUtilTest {
 
     private static final String TASK_ID = "TASK_ID";

@@ -28,7 +28,7 @@ import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import org.kie.kogito.taskassigning.core.model.Task;
-import org.kie.kogito.taskassigning.model.processing.EntityAttributesProcessor;
+import org.kie.kogito.taskassigning.model.processing.AttributesProcessor;
 import org.kie.kogito.taskassigning.model.processing.TaskAttributesProcessor;
 import org.kie.kogito.taskassigning.model.processing.TaskInfo;
 import org.kie.kogito.taskassigning.model.processing.UserAttributesProcessor;
@@ -42,11 +42,10 @@ public class AttributesProcessorRegistry {
     private final List<TaskAttributesProcessor> taskAttributesProcessors;
 
     @Inject
-    public AttributesProcessorRegistry(Instance<EntityAttributesProcessor<?>> processorsInstance) {
-        System.out.println("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO " + processorsInstance.stream().count());
+    public AttributesProcessorRegistry(Instance<AttributesProcessor<?>> processorsInstance) {
         userAttributesProcessors = new ArrayList<>();
         taskAttributesProcessors = new ArrayList<>();
-        for (EntityAttributesProcessor<?> processor : processorsInstance) {
+        for (AttributesProcessor<?> processor : processorsInstance) {
             if (processor instanceof UserAttributesProcessor) {
                 userAttributesProcessors.add((UserAttributesProcessor) processor);
             } else if (processor instanceof TaskAttributesProcessor) {
@@ -64,18 +63,6 @@ public class AttributesProcessorRegistry {
         TaskInfo taskInfo = wrapTask(task);
         for (TaskAttributesProcessor processor : taskAttributesProcessors) {
             try {
-                //TODO remove demorando la pelota!!!
-                if (task.getInputData().containsKey("sleep")) {
-                    try {
-                        System.out.println("VAMOOOOO A DESCANSAR: " + task.getInputData().get("sleep"));
-                        //Thread.sleep(Long.parseLong(task.getInputData().get("sleep").toString()));
-                    } catch (Exception e) {
-                        System.out.println("PETADA al calcular el sleep");
-                    }
-
-                }
-                System.out.println(Thread.currentThread().getName() + " DEMORANDO LA PELOTAAAAAA");
-                //Thread.sleep(60000);
                 processor.process(taskInfo, targetAttributes);
             } catch (Exception e) {
                 String msg = String.format("An error was produced during a task processor execution" +

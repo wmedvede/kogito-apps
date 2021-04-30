@@ -14,21 +14,28 @@
  * limitations under the License.
  */
 
-package org.kie.kogito.taskassigning.service.test;
+package org.kie.kogito.taskassigning.service;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.kie.kogito.taskassigning.user.service.User;
+import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 
 @ApplicationScoped
-public class TestProducer {
+public class UserServiceConnectorDelegate {
 
-    public class MyBean {
+    private final UserServiceConnector userServiceConnector;
 
+    @Inject
+    public UserServiceConnectorDelegate(UserServiceConnector userServiceConnectorLocator) {
+        this.userServiceConnector = userServiceConnectorLocator;
     }
 
-    @Produces
-    MyBean produceMyBean() {
-        return null;
+    @Retry(maxRetries = 10,
+            delay = 1000)
+    public User findUser(String id) {
+        return userServiceConnector.findUser(id);
     }
-
 }

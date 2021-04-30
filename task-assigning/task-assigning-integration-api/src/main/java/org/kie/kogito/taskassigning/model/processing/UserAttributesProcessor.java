@@ -18,5 +18,5 @@ package org.kie.kogito.taskassigning.model.processing;
 
 import org.kie.kogito.taskassigning.user.service.User;
 
-public interface UserAttributesProcessor extends EntityAttributesProcessor<User> {
+public interface UserAttributesProcessor extends AttributesProcessor<User> {
 }

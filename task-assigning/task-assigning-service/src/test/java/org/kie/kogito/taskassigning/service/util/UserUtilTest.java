@@ -50,7 +50,8 @@ class UserUtilTest {
         org.kie.kogito.taskassigning.user.service.User externalUser = mockExternalUser(USER_ID_1,
                 Arrays.asList(GROUP_ID_1, GROUP_ID_2),
                 attributes);
-        User user = UserUtil.fromExternalUser(externalUser);
+        //TODO review
+        User user = UserUtil.fromExternalUser(externalUser, null);
         assertThat(user.getId()).isEqualTo(USER_ID_1);
         assertThat(user.getGroups().stream().map(IdentifiableElement::getId).collect(Collectors.toSet()))
                 .containsExactlyInAnyOrder(GROUP_ID_1, GROUP_ID_2);

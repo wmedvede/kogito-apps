@@ -79,7 +79,6 @@ public class TaskInfoChangeProblemFactChange implements ProblemFactChange<TaskAs
         currentTask.setAdminUsers(taskInfo.getAdminUsers());
         currentTask.setAdminGroups(taskInfo.getAdminGroups());
         currentTask.setExcludedUsers(taskInfo.getExcludedUsers());
-        //TODO, el completed se va
         currentTask.setCompleted(taskInfo.getCompleted());
         currentTask.setLastUpdate(taskInfo.getLastUpdate());
         currentTask.setInputData(taskInfo.getInputData());

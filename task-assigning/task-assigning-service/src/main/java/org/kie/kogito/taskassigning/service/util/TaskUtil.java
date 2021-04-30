@@ -37,7 +37,6 @@ import org.kie.kogito.taskassigning.util.JsonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 
-//TODO revisar esta clase
 public class TaskUtil {
 
     private TaskUtil() {

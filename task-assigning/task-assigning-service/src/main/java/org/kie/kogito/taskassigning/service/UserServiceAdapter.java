@@ -70,13 +70,13 @@ public class UserServiceAdapter {
             TaskAssigningConfig config,
             TaskAssigningServiceEventConsumer taskAssigningServiceEventConsumer,
             ManagedExecutor managedExecutor,
-            UserServiceConnectorLocator userServiceConnectorLocator,
+            UserServiceConnector userServiceConnector,
             Event<StartExecution> startExecutionEvent) {
         this.service = service;
         this.config = config;
         this.taskAssigningServiceEventConsumer = taskAssigningServiceEventConsumer;
         this.managedExecutor = managedExecutor;
-        this.userServiceConnector = userServiceConnectorLocator.getInstance();
+        this.userServiceConnector = userServiceConnector;
         this.startExecutionEvent = startExecutionEvent;
     }
 
@@ -134,9 +134,8 @@ public class UserServiceAdapter {
         return !config.getUserServiceSyncInterval().isZero();
     }
 
-    //TODO set real values
     @Asynchronous
-    @Retry(maxRetries = 10,
+    @Retry(maxRetries = -1,
             delay = 2000,
             maxDuration = 5,
             durationUnit = ChronoUnit.MINUTES)

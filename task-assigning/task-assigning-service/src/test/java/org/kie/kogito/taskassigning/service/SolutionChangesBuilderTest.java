@@ -42,7 +42,6 @@ import org.kie.kogito.taskassigning.core.model.solver.realtime.RemoveTaskProblem
 import org.kie.kogito.taskassigning.core.model.solver.realtime.RemoveUserProblemFactChange;
 import org.kie.kogito.taskassigning.core.model.solver.realtime.UserPropertyChangeProblemFactChange;
 import org.kie.kogito.taskassigning.service.event.UserDataEvent;
-import org.kie.kogito.taskassigning.user.service.UserServiceConnector;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.optaplanner.core.api.score.director.ScoreDirector;
@@ -77,7 +76,8 @@ class SolutionChangesBuilderTest {
     private TaskAssigningServiceContext context;
 
     @Mock
-    private UserServiceConnector userServiceConnector;
+    //TODO review this
+    private UserServiceConnectorDelegate userServiceConnector;
 
     @Mock
     private ScoreDirector<TaskAssigningSolution> scoreDirector;

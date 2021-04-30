@@ -46,6 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
+//TODO review este test, en principio esta bien
 @ExtendWith(MockitoExtension.class)
 class TaskAssigningConfigUtilTest {
 
@@ -59,8 +60,6 @@ class TaskAssigningConfigUtilTest {
     private static final String CLIENT_USER = "CLIENT_USER";
     private static final String CLIENT_PASSWORD = "CLIENT_PASSWORD";
     private static final Duration SYNC_INTERVAL = Duration.of(1, ChronoUnit.MILLIS);
-    private static final int SYNC_RETRIES = 1;
-    private static final Duration SYNC_RETRY_INTERVAL = Duration.of(1, ChronoUnit.MILLIS);
 
     @Mock
     ClientServices clientServices;
@@ -172,8 +171,6 @@ class TaskAssigningConfigUtilTest {
         TaskAssigningConfig config = new TaskAssigningConfig();
         config.dataIndexServerUrl = new URL(DATA_INDEX_SERVER_URL);
         config.userServiceSyncInterval = SYNC_INTERVAL;
-        config.userServiceSyncRetries = SYNC_RETRIES;
-        config.userServiceSyncRetryInterval = SYNC_RETRY_INTERVAL;
         return config;
     }
 

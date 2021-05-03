@@ -17,9 +17,9 @@
 package org.kie.kogito.taskassigning.service;
 
 public enum ServiceStatus {
-
     STARTING,
     READY,
     SHUTDOWN,
-    ERROR
+    ERROR,
+    UNKNOWN
 }

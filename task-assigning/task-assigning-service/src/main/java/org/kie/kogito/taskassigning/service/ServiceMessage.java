@@ -20,28 +20,28 @@ import java.time.ZonedDateTime;
 
 public class ServiceMessage {
 
-    public enum Severity {
+    public enum Type {
         INFO,
         WARN,
         ERROR
     }
 
-    private Severity severity;
-    private ZonedDateTime timestamp;
+    private Type type;
+    private ZonedDateTime time;
     private String value;
 
-    private ServiceMessage(Severity severity, ZonedDateTime timestamp, String value) {
-        this.severity = severity;
-        this.timestamp = timestamp;
+    private ServiceMessage(Type type, ZonedDateTime time, String value) {
+        this.type = type;
+        this.time = time;
         this.value = value;
     }
 
-    public Severity getSeverity() {
-        return severity;
+    public Type getType() {
+        return type;
     }
 
-    public ZonedDateTime getTimestamp() {
-        return timestamp;
+    public ZonedDateTime getTime() {
+        return time;
     }
 
     public String getValue() {
@@ -49,14 +49,14 @@ public class ServiceMessage {
     }
 
     public static ServiceMessage info(String value) {
-        return new ServiceMessage(Severity.INFO, ZonedDateTime.now(), value);
+        return new ServiceMessage(Type.INFO, ZonedDateTime.now(), value);
     }
 
     public static ServiceMessage warn(String value) {
-        return new ServiceMessage(Severity.WARN, ZonedDateTime.now(), value);
+        return new ServiceMessage(Type.WARN, ZonedDateTime.now(), value);
     }
 
     public static ServiceMessage error(String value) {
-        return new ServiceMessage(Severity.ERROR, ZonedDateTime.now(), value);
+        return new ServiceMessage(Type.ERROR, ZonedDateTime.now(), value);
     }
 }

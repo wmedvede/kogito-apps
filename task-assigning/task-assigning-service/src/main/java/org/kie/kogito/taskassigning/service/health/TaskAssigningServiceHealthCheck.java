@@ -16,6 +16,8 @@
 
 package org.kie.kogito.taskassigning.service.health;
 
+import java.time.format.DateTimeFormatter;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -81,6 +83,9 @@ public class TaskAssigningServiceHealthCheck {
     }
 
     private static String buildServerMessage(ServiceMessage message) {
-        return String.format("[%s]:[%s]:[%s]", message.getSeverity().name(), message.getTimestamp(), message.getValue());
+        return String.format("[%s]:[%s]:[%s]",
+                message.getTime().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                message.getType().name(),
+                message.getValue());
     }
 }

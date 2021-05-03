@@ -30,11 +30,17 @@ public class DefaultUserAttributesProcessor extends AbstractDefaultAttributesPro
 
     private static final String PROCESSOR_PREFIX = TASK_ASSIGNING_PROPERTY_PREFIX + ".default-user-attributes-processor";
 
+    private static final String PROCESSOR_PRIORITY_PROPERTY_NAME = PROCESSOR_PREFIX + ".priority";
+
     private static final String PROCESSOR_ENABLED_PROPERTY_NAME = PROCESSOR_PREFIX + ".enabled";
 
     private static final String USER_SKILLS_ATTRIBUTE_PROPERTY_NAME = PROCESSOR_PREFIX + ".skills";
 
     private static final String USER_AFFINITIES_ATTRIBUTE_PROPERTY_NAME = PROCESSOR_PREFIX + ".affinities";
+
+    @Inject
+    @ConfigProperty(name = PROCESSOR_PRIORITY_PROPERTY_NAME, defaultValue = "0")
+    int priority;
 
     @Inject
     @ConfigProperty(name = PROCESSOR_ENABLED_PROPERTY_NAME, defaultValue = "true")
@@ -59,7 +65,12 @@ public class DefaultUserAttributesProcessor extends AbstractDefaultAttributesPro
     }
 
     @Override
-    protected boolean isEnabled() {
+    public boolean isEnabled() {
         return enabled;
+    }
+
+    @Override
+    public int getPriority() {
+        return priority;
     }
 }

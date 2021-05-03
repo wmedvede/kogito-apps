@@ -22,6 +22,8 @@ public interface AttributesProcessor<T> {
 
     int getPriority();
 
+    boolean isEnabled();
+
     void process(T entity, Map<String, Object> targetAttributes);
 
 }

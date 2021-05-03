@@ -28,23 +28,12 @@ import org.kie.kogito.taskassigning.model.processing.AttributesProcessor;
 
 public abstract class AbstractDefaultAttributesProcessor<T> implements AttributesProcessor<T> {
 
-    public static final int DEFAULT_PROCESSOR_PRIORITY = 10;
-
     private static final String SEPARATOR = ",";
 
     @Override
-    public int getPriority() {
-        return DEFAULT_PROCESSOR_PRIORITY;
-    }
-
-    protected abstract boolean isEnabled();
-
-    @Override
     public void process(T entity, Map<String, Object> targetAttributes) {
-        if (isEnabled()) {
-            processAffinities(entity, targetAttributes);
-            processSkills(entity, targetAttributes);
-        }
+        processAffinities(entity, targetAttributes);
+        processSkills(entity, targetAttributes);
     }
 
     protected abstract Object getSkillsValue(T entity);

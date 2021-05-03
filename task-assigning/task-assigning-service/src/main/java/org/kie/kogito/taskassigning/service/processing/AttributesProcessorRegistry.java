@@ -34,9 +34,13 @@ import org.kie.kogito.taskassigning.model.processing.TaskInfo;
 import org.kie.kogito.taskassigning.model.processing.UserAttributesProcessor;
 import org.kie.kogito.taskassigning.service.TaskAssigningException;
 import org.kie.kogito.taskassigning.user.service.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class AttributesProcessorRegistry {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AttributesProcessorRegistry.class);
 
     private final List<UserAttributesProcessor> userAttributesProcessors;
     private final List<TaskAttributesProcessor> taskAttributesProcessors;
@@ -46,13 +50,17 @@ public class AttributesProcessorRegistry {
         userAttributesProcessors = new ArrayList<>();
         taskAttributesProcessors = new ArrayList<>();
         for (AttributesProcessor<?> processor : processorsInstance) {
-            if (processor instanceof UserAttributesProcessor) {
-                userAttributesProcessors.add((UserAttributesProcessor) processor);
-            } else if (processor instanceof TaskAttributesProcessor) {
-                taskAttributesProcessors.add((TaskAttributesProcessor) processor);
+            if (processor.isEnabled()) {
+                if (processor instanceof UserAttributesProcessor) {
+                    userAttributesProcessors.add((UserAttributesProcessor) processor);
+                } else if (processor instanceof TaskAttributesProcessor) {
+                    taskAttributesProcessors.add((TaskAttributesProcessor) processor);
+                } else {
+                    throw new IllegalArgumentException("Unexpected processor implementation: " + processor.getClass() +
+                            ", valid implementations must implement one of the following classes UserAttributesProcessor or TaskAttributesProcessor");
+                }
             } else {
-                throw new IllegalArgumentException("Unexpected processor implementation: " + processor.getClass() +
-                        ", valid implementations must implement one of the following classes UserAttributesProcessor or TaskAttributesProcessor");
+                LOGGER.info("Attributes processor {} has been disabled.", processor.getClass());
             }
         }
         userAttributesProcessors.sort(Comparator.comparingInt(UserAttributesProcessor::getPriority));
@@ -66,8 +74,8 @@ public class AttributesProcessorRegistry {
                 processor.process(taskInfo, targetAttributes);
             } catch (Exception e) {
                 String msg = String.format("An error was produced during a task processor execution" +
-                        ", processor class: %s, taskId: %s, processInstanceId: %s, processId: %s", processor.getClass().getName(),
-                        taskInfo.getTaskId(), taskInfo.getProcessInstanceId(), taskInfo.getProcessId());
+                        ", processor class: %s, taskId: %s, processInstanceId: %s, processId: %s, error: %s", processor.getClass().getName(),
+                        taskInfo.getTaskId(), taskInfo.getProcessInstanceId(), taskInfo.getProcessId(), e.getMessage());
                 throw new TaskAssigningException(msg);
             }
         }
@@ -79,7 +87,7 @@ public class AttributesProcessorRegistry {
                 processor.process(user, targetAttributes);
             } catch (Exception e) {
                 String msg = String.format("An error was produced during a user processor execution" +
-                        ", processor class: %s, userId: %s", processor.getClass().getName(), user.getId());
+                        ", processor class: %s, userId: %s, error: %s", processor.getClass().getName(), user.getId(), e.getMessage());
                 throw new TaskAssigningException(msg);
             }
         }

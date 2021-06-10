@@ -23,8 +23,6 @@ import org.kie.kogito.taskassigning.core.model.TaskAssignment;
 import org.optaplanner.core.api.domain.variable.VariableListener;
 import org.optaplanner.core.api.score.director.ScoreDirector;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
-
 import static org.kie.kogito.taskassigning.core.model.TaskAssignment.END_TIME_IN_MINUTES;
 import static org.kie.kogito.taskassigning.core.model.TaskAssignment.START_TIME_IN_MINUTES;
 
@@ -40,7 +38,7 @@ import static org.kie.kogito.taskassigning.core.model.TaskAssignment.START_TIME_
 
 // workaround for https://issues.redhat.com/browse/PLANNER-2308
 // TODO evaluate removing whe the issue is sorted out.
-@RegisterForReflection
+//@RegisterForReflection
 public class StartAndEndTimeUpdatingVariableListener implements VariableListener<TaskAssigningSolution, TaskAssignment> {
 
     public StartAndEndTimeUpdatingVariableListener() {

@@ -88,9 +88,10 @@ class UserServiceAdapterTest {
 
     @BeforeEach
     void setUp() {
+        //TODO
         lenient().doReturn(SYNC_INTERVAL).when(config).getUserServiceSyncInterval();
-        adapter = spy(new UserServiceAdapter(service, config, taskAssigningServiceEventConsumer,
-                managedExecutor, userServiceConnector, startExecutionEvent));
+        adapter = spy(new UserServiceAdapter(config, taskAssigningServiceEventConsumer,
+                managedExecutor, userServiceConnector, startExecutionEvent, null));
     }
 
     @Test
@@ -157,8 +158,9 @@ class UserServiceAdapterTest {
                 .maxQueued(1)
                 .build();
 
-        UserServiceAdapter realAdapter = new UserServiceAdapter(service, config, taskAssigningServiceEventConsumer,
-                realManagedExecutor, userServiceConnector, startExecutionEvent);
+        //TODO
+        UserServiceAdapter realAdapter = new UserServiceAdapter(config, taskAssigningServiceEventConsumer,
+                realManagedExecutor, userServiceConnector, startExecutionEvent, null);
         realAdapter.scheduleExecution(Duration.parse("PT1S"), () -> {
             wasExecuted.set(true);
             countDownLatch.countDown();

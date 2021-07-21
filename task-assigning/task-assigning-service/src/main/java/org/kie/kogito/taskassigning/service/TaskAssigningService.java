@@ -178,6 +178,10 @@ public class TaskAssigningService {
      * @param result contains the requested data for creating the initial solution.
      */
     synchronized void onSolutionDataLoad(SolutionDataLoader.Result result) {
+        if (isNotOperative()) {
+            LOGGER.warn(SERVICE_INOPERATIVE_MESSAGE, context.getStatus());
+            return;
+        }
         try {
             LOGGER.debug("Solution data loading has finished, startingFromEvents: {}, includeTasks: {}"
                     + ", includeUsers: {}, tasks: {}, users: {}", startingFromEvents,
@@ -342,10 +346,10 @@ public class TaskAssigningService {
      */
     void onBestSolutionChange(BestSolutionChangedEvent<TaskAssigningSolution> event) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("onBestSolutionChange: isEveryProblemFactChangeProcessed: {}, currentChangeSetId: {}," +
-                    " isCurrentChangeSetProcessed: {}, newBestSolution: {}",
-                    event.isEveryProblemFactChangeProcessed(), context.getCurrentChangeSetId(),
-                    context.isCurrentChangeSetProcessed(), event.getNewBestSolution());
+            LOGGER.debug("onBestSolutionChange: isSolutionInitialized:{}, isEveryProblemFactChangeProcessed: {}," +
+                    " currentChangeSetId: {}, isCurrentChangeSetProcessed: {}, newBestSolution: {}",
+                    event.getNewBestSolution().getScore().isSolutionInitialized(), event.isEveryProblemFactChangeProcessed(),
+                    context.getCurrentChangeSetId(), context.isCurrentChangeSetProcessed(), event.getNewBestSolution());
         }
         TaskAssigningSolution newBestSolution = event.getNewBestSolution();
         if (event.isEveryProblemFactChangeProcessed() && newBestSolution.getScore().isSolutionInitialized()) {
@@ -564,16 +568,26 @@ public class TaskAssigningService {
                 });
     }
 
-    void failFast(Throwable cause) {
-        String msg = String.format("An unrecoverable error was produced: %s", cause.getMessage());
-        LOGGER.error(msg, cause);
-        context.setStatus(ServiceStatus.ERROR, ServiceMessage.error(msg));
-        destroyExecutableObjects();
-        serviceMessageConsumer.failFast();
+    synchronized void failFast(Throwable cause) {
+        if (isOperative()) {
+            String msg = String.format("An unrecoverable error was produced: %s", cause.getMessage());
+            LOGGER.error(msg, cause);
+            context.setStatus(ServiceStatus.ERROR, ServiceMessage.error(msg));
+            destroyExecutableObjects();
+            serviceMessageConsumer.failFast();
+        }
+    }
+
+    void onFailFast(@Observes FailFastRequestEvent event) {
+        failFast(event.getCause());
     }
 
     private boolean isNotOperative() {
         return context.getStatus() == ServiceStatus.ERROR || context.getStatus() == ServiceStatus.SHUTDOWN;
+    }
+
+    private boolean isOperative() {
+        return !isNotOperative();
     }
 
     private void startUpValidation() {
@@ -720,6 +734,18 @@ public class TaskAssigningService {
     static class SolutionImprovedOnBackgroundEvent extends TimerBasedEvent {
         public SolutionImprovedOnBackgroundEvent(long timerId) {
             super(timerId);
+        }
+    }
+
+    public static class FailFastRequestEvent {
+        private Throwable cause;
+
+        public FailFastRequestEvent(Throwable cause) {
+            this.cause = cause;
+        }
+
+        public Throwable getCause() {
+            return cause;
         }
     }
 }

@@ -19,12 +19,15 @@ package org.kie.kogito.taskassigning.service.messaging;
 import java.time.ZonedDateTime;
 import java.util.concurrent.CompletableFuture;
 
+import javax.enterprise.event.Event;
+
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.kie.kogito.taskassigning.service.TaskAssigningException;
+import org.kie.kogito.taskassigning.service.TaskAssigningService;
 import org.kie.kogito.taskassigning.service.event.TaskAssigningServiceEventConsumer;
 import org.kie.kogito.taskassigning.service.event.TaskDataEvent;
 import org.mockito.ArgumentCaptor;
@@ -49,6 +52,9 @@ class ReactiveMessagingEventConsumerTest {
     private ManagedExecutor managedExecutor;
 
     @Mock
+    private Event<TaskAssigningService.FailFastRequestEvent> failFastEvent;
+
+    @Mock
     private CompletableFuture<Void> future;
 
     @Captor
@@ -71,7 +77,7 @@ class ReactiveMessagingEventConsumerTest {
     @BeforeEach
     void setUp() {
         taskAssigningServiceEventConsumer = mock(TaskAssigningServiceEventConsumer.class);
-        consumer = new ReactiveMessagingEventConsumer(taskAssigningServiceEventConsumer, managedExecutor);
+        consumer = new ReactiveMessagingEventConsumer(taskAssigningServiceEventConsumer, failFastEvent);
         UserTaskEvent event = new UserTaskEvent();
         event.setTaskId(TASK_ID);
         event.setLastUpdate(LAST_MODIFICATION_DATE);

@@ -60,6 +60,7 @@
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
             <container.image.jobs-service>${container.image.jobs-service}</container.image.jobs-service>
+            <container.image.kafka>${container.image.kafka}</container.image.kafka>
           </systemPropertyVariables>
           <classesDirectory>${project.build.outputDirectory}</classesDirectory>
         </configuration>

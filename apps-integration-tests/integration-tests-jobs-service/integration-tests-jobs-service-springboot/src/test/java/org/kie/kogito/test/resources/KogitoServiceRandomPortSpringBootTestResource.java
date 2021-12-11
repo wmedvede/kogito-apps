@@ -17,7 +17,7 @@ package org.kie.kogito.test.resources;
 
 import java.util.Map;
 
-import org.kie.kogito.it.KogitoServiceRandomPortTestResource;
+import org.kie.kogito.resources.KogitoServiceRandomPortTestResource;
 
 import static java.util.Collections.singletonMap;
 

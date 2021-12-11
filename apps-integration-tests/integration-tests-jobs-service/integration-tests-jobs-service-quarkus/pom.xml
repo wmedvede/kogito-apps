@@ -10,6 +10,10 @@
   <artifactId>integration-tests-jobs-service-quarkus</artifactId>
   <name>Kogito Apps :: Integration Tests :: Jobs Service :: Quarkus</name>
 
+  <properties>
+    <sonar.exclusions>**/kogito/*.java</sonar.exclusions>
+  </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -48,6 +52,11 @@
     <dependency>
       <groupId>org.kie.kogito</groupId>
       <artifactId>kogito-quarkus-test-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

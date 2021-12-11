@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2021 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kie.kogito.it;
+package org.kie.kogito.resources;
 
 import org.kie.kogito.test.resources.TestResource;
 import org.kie.kogito.test.utils.SocketUtils;
@@ -23,9 +23,11 @@ public class KogitoServiceRandomPortTestResource implements TestResource {
 
     public static final String NAME = "kogito-service";
 
-    private static final String KOGITO_SERVICE_URL = "kogito.service.url";
+    public static final String KOGITO_SERVICE_URL = "kogito.service.url";
 
     private int httpPort;
+
+    private String kogitoServiceURL;
 
     @Override
     public String getResourceName() {
@@ -38,16 +40,21 @@ public class KogitoServiceRandomPortTestResource implements TestResource {
         Testcontainers.exposeHostPorts(httpPort);
         //the hostname for the container to access the host is "host.testcontainers.internal"
         //https://www.testcontainers.org/features/networking/#exposing-host-ports-to-the-container
-        System.setProperty(KOGITO_SERVICE_URL, "http://host.testcontainers.internal:" + httpPort);
+        kogitoServiceURL = "http://host.testcontainers.internal:" + httpPort;
+        System.setProperty(KOGITO_SERVICE_URL, kogitoServiceURL);
     }
 
     @Override
     public void stop() {
-
+        // Implementation is not required since this resource has nothing to stop.
     }
 
     @Override
     public int getMappedPort() {
         return httpPort;
+    }
+
+    public String getKogitoServiceURL() {
+        return kogitoServiceURL;
     }
 }

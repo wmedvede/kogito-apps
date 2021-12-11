@@ -30,6 +30,7 @@ public class JobServiceContainer extends KogitoGenericContainer<JobServiceContai
         super(NAME);
         addExposedPort(PORT);
         waitingFor(Wait.forLogMessage(".*Listening on:.*", 1));
+        addEnv("QUARKUS_HTTP_PORT", Integer.toString(PORT));
     }
 
     @Override
@@ -42,4 +43,11 @@ public class JobServiceContainer extends KogitoGenericContainer<JobServiceContai
         return NAME;
     }
 
+    public void setKafkaURL(String kafkaURL) {
+        addEnv("KAFKA_BOOTSTRAP_SERVERS", kafkaURL);
+    }
+
+    public void setQuarkusProfile(String profile) {
+        addEnv("QUARKUS_PROFILE", profile);
+    }
 }

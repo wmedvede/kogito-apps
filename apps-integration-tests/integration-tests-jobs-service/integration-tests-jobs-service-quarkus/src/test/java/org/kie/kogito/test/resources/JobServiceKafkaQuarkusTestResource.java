@@ -13,34 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.kie.kogito.test.resources;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.kie.kogito.resources.KogitoServiceRandomPortTestResource;
+import org.kie.kogito.resources.JobServiceKafkaResource;
 
-public class KogitoServiceRandomPortQuarkusTestResource extends ConditionalQuarkusTestResource<KogitoServiceRandomPortTestResource> {
+public class JobServiceKafkaQuarkusTestResource extends ConditionalQuarkusTestResource<JobServiceKafkaResource> {
 
-    public static final String QUARKUS_SERVICE_HTTP_PORT = "quarkus.http.test-port";
+    public static final String JOBS_SERVICE_KAFKA_URL = "kogito.jobs-service-kafka.url";
 
-    public KogitoServiceRandomPortQuarkusTestResource() {
-        super(new KogitoServiceRandomPortTestResource());
-    }
-
-    /**
-     * The Kogito Service must be run first to make the port available in the rest of services.
-     */
-    @Override
-    public int order() {
-        return -1;
+    public JobServiceKafkaQuarkusTestResource() {
+        super(new JobServiceKafkaResource());
     }
 
     @Override
     protected Map<String, String> getProperties() {
         Map<String, String> properties = new HashMap<>();
-        properties.put(QUARKUS_SERVICE_HTTP_PORT, String.valueOf(getTestResource().getMappedPort()));
-        properties.put(KogitoServiceRandomPortTestResource.KOGITO_SERVICE_URL, getTestResource().getKogitoServiceURL());
+        properties.put(JOBS_SERVICE_KAFKA_URL, "http://localhost:" + getTestResource().getMappedPort());
+        properties.putAll(getTestResource().getProperties());
         return properties;
     }
 }

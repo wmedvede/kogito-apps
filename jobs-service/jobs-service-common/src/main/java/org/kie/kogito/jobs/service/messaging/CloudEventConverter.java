@@ -54,6 +54,8 @@ public class CloudEventConverter implements MessageConverter {
                 .orElseThrow(() -> new IllegalStateException("No http metadata"));
         MultiMap httpHeaders = httpMetadata.getHeaders();
         LOGGER.debug("httpHeaders: {}", httpHeaders);
+
+        System.out.println("XXXXXXXXXXXXXXXXX el path: " + httpMetadata.getPath());
         Buffer buffer = (Buffer) message.getPayload();
         MessageReader messageReader = VertxMessageFactory.createReader(httpHeaders, buffer);
         CloudEvent cloudEvent = messageReader.toEvent();

@@ -1,0 +1,22 @@
+{
+  "sinkUrl": "http://default-broker.default.svc.cluster.local",
+  "httpTimeoutMs": 20,
+  "contentMode": "binary | structured",
+  "event": {
+    "id" : "A234-1234-1234",
+    "source": "my_source",
+    "specversion": "1.0",
+    "type": "jobs.create",
+    "subject": "my_subject",
+    "kogitoprocid": "my_process_id",
+    "kogitoprocist": "c54331b8-ab80-4931-ab4a-f789863b2d9c",
+    "data": {
+      "name": "Bob",
+      "age": 25,
+      "address": {
+        "street": "Main Street, 56",
+        "city": "New York"
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "The unique job id",
+  "description": "The job description",
+  "state" : "TBD",
+  "schedule": {
+    "timer": {
+      "startTime": "ISO 8601 Zoned Date Time t",
+      "repeatCount": "Integer, default = 0, the value must be greater than or equal to 0.",
+      "delay": "Integer, default = 0, the value must be greater than or equal to 0.",
+      "delayUnit": "MILLIS | SECONDS | MINUTES | HOURS | DAYS"
+    },
+    "cron": {
+      "expression": "0 0 0 1 * ?",
+      "timeZone": "Europe/Madrid"
+    }
+  },
+  "retry": {
+    "maxRetries": "Integer, default = 3",
+    "delay": "Integer, default = 0, The value must be greater than or equal to 0.",
+    "delayUnit": "MILLIS | SECONDS, The default = MILLIS",
+    "maxDuration": "Integer, default = 180000",
+    "durationUnit": "MILLIS | SECONDS, The default is MILLIS"
+  },
+  "httpRecipient": {
+  },
+  "sinkRecipient": {
+  },
+  "kafkaRecipient": {
+  }
+}
+

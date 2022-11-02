@@ -1,0 +1,36 @@
+{
+  "id": "UUID of the cloud event",
+  "source": "myProcess/processInstanceId",
+  "specversion": "1.0",
+  "type": "job.create",
+  "datacontenttype": "application/json",
+  // the data of the event contains the required fields to create a job.
+  "data": {
+    "id": "the job id",
+    "description": "the job description",
+    "timeZone": "tbd",
+    "schedule": {
+      "fireOnceFormat": "ISO_DURATION | ISO_DATE_TIME",
+      "fireOnce": "PT15S or 2022-10-05T10:55:00+02:00",
+      "fireMultipleFormat": "ISO_REPEATABLE_INTERVAL | CRON",
+      "fireMultipleCron": "R3/PT30M | 0 0 0 1 * ?"
+    }
+  },
+  "retryConfig": {
+    "retryCount": "integer",
+    "maxRetryDuration": "string",
+    "minBackoffDuration": "string",
+    "maxBackoffDuration": "string",
+    "maxDoublings": "integer"
+  },
+  "attemptDeadline": "string",
+  "eventTarget": {
+    "topicName": "kogito_jobs_service_incoming_stream_reader",
+    "data": "A string with the data to publish, in kogito we should typically provide the cloud event to send to the process",
+    "attributes": {
+      "attr1": "value1",
+      "attr2": "value2"
+    }
+  }
+}
+

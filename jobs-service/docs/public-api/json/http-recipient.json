@@ -1,0 +1,13 @@
+{
+  "url": "String",
+  "method": "GET|HEAD|POST|PUT|DELETE|PATCH|TRACE|OPTIONS",
+  "headers": {
+    "headerKey1": "value1",
+    "headerKey2": "value2"
+  },
+  "queryParams": {
+    "param1": "value1",
+    "param2": "value2"
+  },
+  "body": "A string with the data to send"
+}

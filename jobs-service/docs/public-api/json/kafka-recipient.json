@@ -1,0 +1,9 @@
+{
+  "bootstrap.servers": "server1:9092,server1:9092",
+  "topicName": "kogito_jobs_service_incoming_stream_reader",
+  "payload": "A string with the data to publish, in kogito we should typically provide the cloud event to send to the process",
+  "headers": {
+    "headerKey1": "value1",
+    "headerKey2": "value2"
+  }
+}

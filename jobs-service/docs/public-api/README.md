@@ -265,7 +265,7 @@ Returns a job.
 | Request body | Empty |
 | Path parameters | id: String |
 | Response code | - 200 Ok <br> - 404 Not Found |
-| Response body | A an instance of [Job Resource](#job-resource) corresponding to the requested job id |
+| Response body | An instance of a [Job Resource](#job-resource) corresponding to the requested job id |
 
 ### Create
 
@@ -274,7 +274,7 @@ Creates a job.
 | Element | Description | 
 | --- | --- |
 | Http request| POST /jobs |
-| Request body | A an instance of a [Job Resource](#job-resource) |
+| Request body | An instance of a [Job Resource](#job-resource) |
 | Path parameters | No params |
 | Response code | - 201 Created |
 | Response body | An instance of the just created [Job Resource](#job-resource) | 
@@ -289,7 +289,7 @@ Updates a job.
 | Request body | A subset of the [Job Resource](#job-resource) with the updatable information |
 | Path parameters | id: String |
 | Response code | - 200 Ok <br> - 404 Not Found |
-| Response body | A an instance of the just updated [Job Resource](#job-resource) |
+| Response body | An instance of the just updated [Job Resource](#job-resource) |
 
 The patch operation only supports the modification of the job's schedule and retry information with the following restrictions. The job schedule type can not be changed, which means that if a job is of type timer, only the timer related information can be changed, etc.
 The following example show the body of a potential patch operation that is executed on a previously created job.
@@ -322,7 +322,7 @@ Pauses a job.
 | Request body | Empty |
 | Path parameters | id: String |
 | Response code | - 200 Ok <br> - 404 Not Found |
-| Response body | A an instance of the just paused [Job Resource](#job-resource) |
+| Response body | An instance of the just paused [Job Resource](#job-resource) |
 
 ### Resume
 
@@ -334,7 +334,7 @@ Resumes a job.
 | Request body | Empty |
 | Path parameters | id: String |
 | Response code | - 200 Ok <br> - 404 Not Found |
-| Response body | A an instance of the just resumed [Job Resource](#job-resource) |
+| Response body | An instance of the just resumed [Job Resource](#job-resource) |
 
 ### Delete
 

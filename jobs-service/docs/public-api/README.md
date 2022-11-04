@@ -359,14 +359,14 @@ The jobs service eventing api is based on cloud events and supports the followin
 | Event type | Description | 
 | ---------- | ----------- | 
 | [job.create](#jobcreate) | Creates a job. |
-| job.update | Updates a job. The update operation only supports the modification of the job's schedule and retry information with the following restrictions. The job schedule type can not be changed, which means that if a job is of type timer, only the timer related information can be changed, etc. | 
-| job.pause | Pauses a job. When paused, no job execution will be produced until it's resumed. | 
-| job.resume | Resume a job. If a job was created with a schedule of type timer, all overdue executions during the paused period will be automatically executed. However, if it was created with a schedule of type crone, it'll be automatically programmed to execute in the next upcoming execution if any. |   
-| job.delete | Deletes the job | 
+| [job.update](#jobupdate) | Updates a job. The update operation only supports the modification of the job's schedule and retry information with the following restrictions. The job schedule type can not be changed, which means that if a job is of type timer, only the timer related information can be changed, etc. | 
+| [job.pause](#jobpause) | Pauses a job. When paused, no job execution will be produced until it's resumed. | 
+| [job.resume](#jobresume) | Resume a job. If a job was created with a schedule of type timer, all overdue executions during the paused period will be automatically executed. However, if it was created with a schedule of type crone, it'll be automatically programmed to execute in the next upcoming execution if any. |   
+| [job.delete](#jobdelete) | Deletes a job. | 
 
 ## job.create
 
-To create a job by using the eventing api you must create a cloud event of type job.create that contains a [Job definition](#job-definition) as the event data:
+To create a job by using the eventing api you must create a cloud event of type job.create that contains a [Job Resource](#job-resource) as the event data:
 
 ```json
 {
@@ -405,14 +405,14 @@ To create a job by using the eventing api you must create a cloud event of type 
 
 ## job.update
 
-To update a job by using the eventing api you must create a cloud event of type job.update that contains a sub set of Job to update [see](#patch).
+To update a job by using the eventing api you must create a cloud event of type job.update that contains a sub set of Job Resource properties to update [see](#patch).
 
 ```json
 {
   "id": "6896d653-7845-4acc-aa9b-1b2bae2ab656",
   "source": "myProcess/processInstanceId",
   "specversion": "1.0",
-  "type": "job.create",
+  "type": "job.update",
   "datacontenttype": "application/json",
   "data": {
     "id": "398c3278-c930-497d-aaeb-0bdcf1a58adf",

@@ -2,7 +2,7 @@
 
 This document contains the Jobs Service public API specification
 
-## Table of Contents
+# Table of Contents
 
 - [REST API](#rest-api)
     - [Job Resource](#job-resource)
@@ -170,7 +170,7 @@ The http recipient configuration delivers the job's body by executing a http or 
 | Parameter | Description | Type |
 | --------- | ----------- | ---- |
 | url | Url of the recipient that will receive the request. | An http or https url. |
-| timeoutMs | A timeout in milliseconds to wait for the response. | Long |
+| timeoutMs | A timeout in milliseconds to wait for the http response. | Long |
 | method | Http method to use for the request. | "GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" |
 | headers | A json map of values representing the http headers to pass in the request. | { "header1" : "value1", "header2" , "value2" } |
 | queryParams | A map of values representing the http query parameters to pass in the request. | { "param1" : "value1", "param2" , "value2" } |
@@ -198,7 +198,7 @@ configured sinkUrl. The delivery is considered successful when the sink returns 
 | --------- | ----------- | ---- |
 | sinkUrl | The knative sink url | string |
 | timeoutMs | A timeout in milliseconds to wait for the response. | Integer |
-| contentType | Configures the content type mode to use for the event delivery, the default value is "binary" | "binary", "structured" |
+| contentMode | Configures the delivery mode for the produced cloud event, the default value is "binary" | "binary", "structured" |
 | event | A cloud event compliant Json string. | String |
 
 The following example shows a sink recipient configuration:
@@ -214,7 +214,7 @@ The following example shows a sink recipient configuration:
     "specversion": "1.0",
     "type": "customer.create",
     "subject": "my_subject",
-    "kogitoprocid": "add-customer-sw",
+    "kogitoprocid": "create_customer_sw",
     "kogitoprocist": "c54331b8-ab80-4931-ab4a-f789863b2d9c",
     "data": {
       "name": "Bob",
@@ -253,9 +253,11 @@ The following example shows a kafka sink recipient configuration:
 }
 ```
 
-### Methods
+## Methods
 
-#### Get
+### Get
+
+Returns a job.
 
 | Element | Description | 
 | --- | --- |
@@ -265,7 +267,9 @@ The following example shows a kafka sink recipient configuration:
 | Response code | - 200 Ok <br> - 404 Not Found |
 | Response body | A an instance of [Job Resource](#job-resource) corresponding to the requested job id |
 
-#### Create
+### Create
+
+Creates a job.
 
 | Element | Description | 
 | --- | --- |
@@ -275,7 +279,9 @@ The following example shows a kafka sink recipient configuration:
 | Response code | - 201 Created |
 | Response body | An instance of the just created [Job Resource](#job-resource) | 
 
-#### Patch
+### Patch
+
+Updates a job.
 
 | Element | Description | 
 | --- | --- |
@@ -306,7 +312,9 @@ The following example show the body of a potential patch operation that is execu
 }
 ```
 
-#### Pause
+### Pause
+
+Pauses a job.
 
 | Element | Description | 
 | --- | --- |
@@ -316,7 +324,9 @@ The following example show the body of a potential patch operation that is execu
 | Response code | - 200 Ok <br> - 404 Not Found |
 | Response body | A an instance of the just paused [Job Resource](#job-resource) |
 
-#### Resume
+### Resume
+
+Resumes a job.
 
 | Element | Description | 
 | --- | --- |
@@ -326,7 +336,9 @@ The following example show the body of a potential patch operation that is execu
 | Response code | - 200 Ok <br> - 404 Not Found |
 | Response body | A an instance of the just resumed [Job Resource](#job-resource) |
 
-#### Delete
+### Delete
+
+Deletes a job.
 
 | Element | Description | 
 | --- | --- |
@@ -342,7 +354,6 @@ You can find the jobs service OpenAPI specification document in the following [l
 
 # Eventing API
 
-[job.create](#jobcreate)
 The jobs service eventing api is based on cloud events and supports the following event types:
 
 | Event type | Description | 

@@ -7,7 +7,7 @@ paths:
   /jobs:
     get:
       tags:
-        - Acme Financial Resource
+        - GetJob Operation
       operationId: get-job
       responses:
         "200":

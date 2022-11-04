@@ -1,0 +1,14 @@
+---
+openapi: 3.0.3
+info:
+  title: Jobs Service API (TBD)
+  version: 1.0.0
+paths:
+  /jobs:
+    get:
+      tags:
+        - Acme Financial Resource
+      operationId: get-job
+      responses:
+        "200":
+          description: OK

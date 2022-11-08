@@ -477,7 +477,7 @@ To delete a job by using the eventing api you must create a cloud event of type 
 }
 ```
 
-# Jobs Service Client2
+# Jobs Service Client
 
 TBD, future, different client implementations to interact with the jobs service.
 

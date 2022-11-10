@@ -1,6 +1,11 @@
 # Introduction
 
 The jobs service facilitates the scheduled executions of tasks in a cloud environment. These tasks are implemented by different independent services, and can be started by using any of the jobs service supported protocols.
+To create a job, the following information must be provided:
+* **Schedule**: the job triggering periodicity.
+* **Recipient**: the entity that is called on the job execution and receives the execution parameters.
+* **Retry**: a retries configuration in cases the job execution fail.
+
 
 <img src="images/JobsServiceIntroduction.png" />
 
@@ -39,14 +44,14 @@ The jobs service facilitates the scheduled executions of tasks in a cloud enviro
 
 A Job resource is represented by the following information:
 
-| Parameter | Description | Type |
-| --------- | ----------- | ----- |
-| id | The unique identifier of the job in the system. | String |
-| description  | A human readable string with the job description. | String |
-| state | The job state. | [Job State](#state) |
-| schedule| This value represents the job triggering periodicity. | [Job Schedule](#schedule) |
-| retry | Retries configuration in case the job execution fails. | [Retry](#retry) |
-| recipient | The recipient of the job execution. | The recipient is determined by using one of the following fields (exclusively): ["httpRecipient"](#http-recipient), ["sinkRecipient"](#sink-recipient), ["kafkaRecipient"](#kafka-recipient) |
+| Parameter | Description                                                                       | Type |
+| --------- |-----------------------------------------------------------------------------------| ----- |
+| id | The unique identifier of the job in the system.                                   | String |
+| description  | A human readable string with the job description.                                 | String |
+| state | The job state.                                                                    | [Job State](#state) |
+| schedule| This value represents the job triggering periodicity.                             | [Job Schedule](#schedule) |
+| retry | Retries configuration in case the job execution fails.                            | [Retry](#retry) |
+| recipient | The entity that is called on the job execution. | The recipient is determined by using one of the following fields (exclusively): ["httpRecipient"](#http-recipient), ["sinkRecipient"](#sink-recipient), ["kafkaRecipient"](#kafka-recipient) |
 
 The following example shows a job instance that executes a *sales_report* every night at *03:00 AM* to produce the *nightly* sales report for the *Spanish* branch of a fictitious company:
 

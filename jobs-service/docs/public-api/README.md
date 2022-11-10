@@ -48,7 +48,7 @@ A Job resource is represented by the following information:
 | retry | Retries configuration in case the job execution fails. | [Retry](#retry) |
 | recipient | The recipient of the job execution. | The recipient is determined by using one of the following fields (exclusively): ["httpRecipient"](#http-recipient), ["sinkRecipient"](#sink-recipient), ["kafkaRecipient"](#kafka-recipient) |
 
-The following example shows the job definition that starts a serverless workflow *sales_report* every night at *03:00 AM* to produce the *nightly* sales report for the *Spanish* branch of a fictitious company:
+The following example shows a job instance that executes a *sales_report* every night at *03:00 AM* to produce the *nightly* sales report for the *Spanish* branch of a fictitious company:
 
 ```json
 {

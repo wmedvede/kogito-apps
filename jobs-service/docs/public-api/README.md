@@ -1,6 +1,6 @@
 # Introduction
 
-The jobs service facilitates the scheduled executions of tasks in a cloud environment. These tasks are implemented by different services that are present in the cloud environment, and can be started by using any of the jobs service supported protocols.
+The jobs service facilitates the scheduled executions of tasks in a cloud environment. These tasks are implemented by different independent services, and can be started by using any of the jobs service supported protocols.
 
 <img src="images/JobsServiceIntroduction.png" />
 

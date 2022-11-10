@@ -1,20 +1,22 @@
 # Introduction
 
-This document contains the Jobs Service public API specification
+The jobs service facilitates the scheduled executions of tasks in a cloud environment. These tasks are implemented by different services that are present in the cloud environment, and can be started by using any of the jobs service supported protocols.
+
+<img src="images/JobsServiceIntroduction.png" />
 
 # Table of Contents
 
+- [Job Resource](#job-resource)
+    - [State](#state)
+    - [Schedule](#schedule)
+        - [Timer](#timer)
+        - [Cron](#cron)
+    - [Retry](#retry)
+    - [Recipient](#recipient)
+        - [Http Recipient](#http-recipient)
+        - [Sink Recipient](#sink-recipient)
+        - [Kafka Recipient](#kafka-recipient)
 - [REST API](#rest-api)
-    - [Job Resource](#job-resource)
-        - [State](#state)
-        - [Schedule](#schedule)
-            - [Timer](#timer)
-            - [Cron](#cron)
-        - [Retry](#retry)
-        - [Recipient](#recipient)
-            - [Http Recipient](#http-recipient)
-            - [Sink Recipient](#sink-recipient)
-            - [Kafka Recipient](#kafka-recipient)
     - [Methods](#methods)
         - [Get](#get)
         - [Create](#create)
@@ -33,9 +35,7 @@ This document contains the Jobs Service public API specification
     - [Java Client](#java-client)
     - [Knative Eventing Client](#knative-eventing-client)
 
-# REST API
-
-## Job Resource
+# Job Resource
 
 A Job resource is represented by the following information:
 
@@ -78,15 +78,15 @@ The following example shows the job definition that starts a serverless workflow
 }
 ```
 
-### State
+## State
 
 A job can be in any of the following states: TBD
 
-### Schedule
+## Schedule
 
 A job schedule can be any of the following types: [Timer](#timer) or [Cron](#cron)
 
-#### Timer
+### Timer
 
 Timer schedules are executed at a given date time and can be repeated a configured number of times.
 
@@ -112,7 +112,7 @@ The following example shows a schedule configuration of type timer:
 }
 ```
 
-#### Cron
+### Cron
 
 Crone schedules are executed periodically according to a cron expression.
 
@@ -134,7 +134,7 @@ The following example shows a schedule of type cron:
 }
 ```
 
-### Retry
+## Retry
 
 The retry configuration establishes the number of times a failing Job execution must be retried before it's considered
 as FAILED. For multiple time jobs, such as timer jobs with a repeatCount > 0, or cron jobs, a Job execution N, marked as
@@ -161,9 +161,9 @@ The following example shows a retry configuration:
   }
 }
 ```
-### Recipient
+## Recipient
 
-#### Http Recipient
+### Http Recipient
 
 The http recipient configuration delivers the job's body by executing a http or https request on the configured url. The delivery is considered successful when the HTTP response is in the range [200 - 299].
 
@@ -189,7 +189,7 @@ The following example shows a http recipient configuration:
 }
 ```
 
-#### Sink Recipient
+### Sink Recipient
 
 The sink recipient configuration delivers a cloud event to a knative sink by executing a http POST request on the
 configured sinkUrl. The delivery is considered successful when the sink returns an HTTP response in the range [200 - 299].
@@ -228,7 +228,7 @@ The following example shows a sink recipient configuration:
 }
 ```
 
-#### Kafka Recipient
+### Kafka Recipient
 
 The kafka recipient configuration delivers a kafka message to a kafka broker.
 
@@ -252,6 +252,8 @@ The following example shows a kafka sink recipient configuration:
   }
 }
 ```
+
+# REST API
 
 ## Methods
 

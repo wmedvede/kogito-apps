@@ -26,9 +26,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.kie.kogito.jobs.api.Job;
-import org.kie.kogito.jobs.api.event.CancelJobRequestEvent;
-import org.kie.kogito.jobs.api.event.CreateProcessInstanceJobRequestEvent;
+import org.kie.kogito.jobs.service.api.Job;
+import org.kie.kogito.jobs.service.api.JobLookupId;
+import org.kie.kogito.jobs.service.api.TemporalUnit;
+import org.kie.kogito.jobs.service.api.event.CreateJobEvent;
+import org.kie.kogito.jobs.service.api.event.DeleteJobEvent;
+import org.kie.kogito.jobs.service.api.recipient.http.HttpRecipient;
+import org.kie.kogito.jobs.service.api.schedule.timer.TimerSchedule;
 import org.kie.kogito.jobs.service.exception.JobServiceException;
 import org.kie.kogito.jobs.service.model.JobStatus;
 import org.kie.kogito.jobs.service.model.job.JobDetails;
@@ -59,6 +63,15 @@ import static org.mockito.Mockito.verify;
 abstract class ReactiveMessagingEventConsumerTest<T extends ReactiveMessagingEventConsumer> {
 
     private static final String JOB_ID = "JOB_ID";
+
+    public static final String SCHEDULE_START_TIME = "2023-01-30T22:01:15.001+01:00";
+    public static final int SCHEDULE_REPEAT_COUNT = 5;
+    public static final long SCHEDULE_DELAY = 2;
+    public static final TemporalUnit SCHEDULE_DELAY_UNIT = TemporalUnit.HOURS;
+
+    public static final String RECIPIENT_URL = "http://bank.gateway.internal/adduser";
+    public static final String RECIPIENT_METHOD = "POST";
+
     private static final String INTERNAL_ERROR = "Internal error";
     private static final String JOB_QUERY_ERROR = "Job query error";
     private static final String EVENT_ID = "EVENT_ID";
@@ -257,23 +270,34 @@ abstract class ReactiveMessagingEventConsumerTest<T extends ReactiveMessagingEve
     }
 
     private CloudEvent newCreateProcessInstanceJobRequestCloudEvent() throws Exception {
-        Job job = new Job();
-        job.setId(JOB_ID);
+        Job job = Job.builder()
+                .id(JOB_ID)
+                .recipient(HttpRecipient.builder()
+                        .url(RECIPIENT_URL)
+                        .method(RECIPIENT_METHOD)
+                        .build())
+                .schedule(TimerSchedule.builder()
+                        .startTime(SCHEDULE_START_TIME)
+                        .repeatCount(SCHEDULE_REPEAT_COUNT)
+                        .delay(SCHEDULE_DELAY)
+                        .delayUnit(SCHEDULE_DELAY_UNIT)
+                        .build())
+                .build();
         return CloudEventBuilder.v1()
                 .withId(EVENT_ID)
                 .withSource(EVENT_SOURCE)
-                .withType(CreateProcessInstanceJobRequestEvent.CREATE_PROCESS_INSTANCE_JOB_REQUEST)
+                .withType(CreateJobEvent.TYPE)
                 .withData(objectMapper.writeValueAsBytes(job))
                 .build();
     }
 
     private CloudEvent newCancelJobRequestCloudEvent() throws Exception {
-        CancelJobRequestEvent.JobId jobId = new CancelJobRequestEvent.JobId(JOB_ID);
+        JobLookupId jobLookupId = JobLookupId.fromId(JOB_ID);
         return CloudEventBuilder.v1()
                 .withId(EVENT_ID)
                 .withSource(EVENT_SOURCE)
-                .withType(CancelJobRequestEvent.CANCEL_JOB_REQUEST)
-                .withData(objectMapper.writeValueAsBytes(jobId))
+                .withType(DeleteJobEvent.TYPE)
+                .withData(objectMapper.writeValueAsBytes(jobLookupId))
                 .build();
     }
 }

@@ -32,7 +32,6 @@ class ProcessTimerIT extends BaseProcessTimerIT {
 
     @Override
     public String dataIndexUrl() {
-        String url = System.getProperty(DATA_INDEX_SERVICE_URL);
-        return url;
+        return System.getProperty(DATA_INDEX_SERVICE_URL);
     }
 }

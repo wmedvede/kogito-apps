@@ -32,11 +32,15 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.kie.kogito.jobs.api.Job;
 import org.kie.kogito.jobs.api.URIBuilder;
-import org.kie.kogito.jobs.api.event.CancelJobRequestEvent;
-import org.kie.kogito.jobs.api.event.CreateProcessInstanceJobRequestEvent;
-import org.kie.kogito.jobs.api.event.serialization.JobCloudEventSerializer;
+import org.kie.kogito.jobs.service.api.Job;
+import org.kie.kogito.jobs.service.api.JobLookupId;
+import org.kie.kogito.jobs.service.api.TemporalUnit;
+import org.kie.kogito.jobs.service.api.event.CreateJobEvent;
+import org.kie.kogito.jobs.service.api.event.DeleteJobEvent;
+import org.kie.kogito.jobs.service.api.event.serialization.JobCloudEventSerializer;
+import org.kie.kogito.jobs.service.api.recipient.http.HttpRecipient;
+import org.kie.kogito.jobs.service.api.schedule.timer.TimerSchedule;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -58,16 +62,12 @@ public abstract class BaseMessagingApiIT {
     private static final String JOB_ID_2 = "JOB_ID_2";
     private static final String PROCESS_INSTANCE_ID = "PROCESS_INSTANCE_ID";
     private static final String PROCESS_ID = "PROCESS_ID";
-    private static final String ROOT_PROCESS_INSTANCE_ID = "ROOT_PROCESS_INSTANCE_ID";
-    private static final String ROOT_PROCESS_ID = "ROOT_PROCESS_ID";
-    private static final String KOGITO_ADDONS = "KOGITO_ADDONS";
     private static final String NODE_INSTANCE_ID_1 = "NODE_INSTANCE_ID_1";
     private static final String NODE_INSTANCE_ID_2 = "NODE_INSTANCE_ID_2";
-
-    private static final long REPEAT_INTERVAL = 1000;
-    private static final int REPEAT_LIMIT = 3;
-    private static final int PRIORITY = 0;
-
+    public static final int SCHEDULE_REPEAT_COUNT = 3;
+    public static final long SCHEDULE_DELAY = 1000;
+    public static final TemporalUnit SCHEDULE_DELAY_UNIT = TemporalUnit.MILLIS;
+    public static final String RECIPIENT_METHOD = "POST";
     private static final AtomicInteger CHECK_CALLBACK_NODE_INSTANCE_ID = new AtomicInteger();
     private static final int CALLBACK_EXECUTIONS_QUERY_TIMOUT_IN_SECONDS = 2 * 60;
     private static final int CALLBACK_EXECUTIONS_QUERY_POLL_INTERVAL_IN_MILLISECONDS = 3000;
@@ -106,24 +106,21 @@ public abstract class BaseMessagingApiIT {
         ZonedDateTime expiration = ZonedDateTime.now().plusSeconds(10);
 
         String callback = buildCallbackEndpoint(getCallbackResourceURL(), PROCESS_ID, PROCESS_INSTANCE_ID, NODE_INSTANCE_ID_1);
-        CreateProcessInstanceJobRequestEvent event = CreateProcessInstanceJobRequestEvent.builder()
+        CreateJobEvent event = CreateJobEvent.builder()
                 .source(URI.create(TEST_SOURCE))
-                .job(new Job(JOB_ID_1,
-                        expiration,
-                        PRIORITY,
-                        callback,
-                        PROCESS_INSTANCE_ID,
-                        ROOT_PROCESS_INSTANCE_ID,
-                        PROCESS_ID,
-                        ROOT_PROCESS_ID,
-                        REPEAT_INTERVAL,
-                        REPEAT_LIMIT,
-                        NODE_INSTANCE_ID_1))
-                .processInstanceId(PROCESS_INSTANCE_ID)
-                .processId(PROCESS_ID)
-                .rootProcessInstanceId(ROOT_PROCESS_INSTANCE_ID)
-                .rootProcessId(ROOT_PROCESS_ID)
-                .kogitoAddons(KOGITO_ADDONS)
+                .job(Job.builder()
+                        .id(JOB_ID_1)
+                        .recipient(HttpRecipient.builder()
+                                .url(callback)
+                                .method(RECIPIENT_METHOD)
+                                .build())
+                        .schedule(TimerSchedule.builder()
+                                .startTime(expiration.toString())
+                                .repeatCount(SCHEDULE_REPEAT_COUNT)
+                                .delay(SCHEDULE_DELAY)
+                                .delayUnit(SCHEDULE_DELAY_UNIT)
+                                .build())
+                        .build())
                 .build();
         String jsonEvent = serializer.serialize(event);
         jobEventsEmitter.send(jsonEvent);
@@ -143,24 +140,21 @@ public abstract class BaseMessagingApiIT {
         // create a job service request event and send it to the jobs service.
         ZonedDateTime expiration = ZonedDateTime.now().plusDays(1);
         String callback = buildCallbackEndpoint(getCallbackResourceURL(), PROCESS_ID, PROCESS_INSTANCE_ID, NODE_INSTANCE_ID_2);
-        CreateProcessInstanceJobRequestEvent createJobEvent = CreateProcessInstanceJobRequestEvent.builder()
+        CreateJobEvent createJobEvent = CreateJobEvent.builder()
                 .source(URI.create(TEST_SOURCE))
-                .job(new Job(JOB_ID_2,
-                        expiration,
-                        PRIORITY,
-                        callback,
-                        PROCESS_INSTANCE_ID,
-                        ROOT_PROCESS_INSTANCE_ID,
-                        PROCESS_ID,
-                        ROOT_PROCESS_ID,
-                        REPEAT_INTERVAL,
-                        REPEAT_LIMIT,
-                        NODE_INSTANCE_ID_2))
-                .processInstanceId(PROCESS_INSTANCE_ID)
-                .processId(PROCESS_ID)
-                .rootProcessInstanceId(ROOT_PROCESS_INSTANCE_ID)
-                .rootProcessId(ROOT_PROCESS_ID)
-                .kogitoAddons(KOGITO_ADDONS)
+                .job(Job.builder()
+                        .id(JOB_ID_2)
+                        .recipient(HttpRecipient.builder()
+                                .url(callback)
+                                .method(RECIPIENT_METHOD)
+                                .build())
+                        .schedule(TimerSchedule.builder()
+                                .startTime(expiration.toString())
+                                .repeatCount(SCHEDULE_REPEAT_COUNT)
+                                .delay(SCHEDULE_DELAY)
+                                .delayUnit(SCHEDULE_DELAY_UNIT)
+                                .build())
+                        .build())
                 .build();
         String createJobEventJson = serializer.serialize(createJobEvent);
         jobEventsEmitter.send(createJobEventJson);
@@ -173,12 +167,12 @@ public abstract class BaseMessagingApiIT {
                 CALLBACK_EXECUTIONS_QUERY_POLL_INTERVAL_IN_MILLISECONDS);
 
         // create a job service cancel event and send it to the jobs service.
-        CancelJobRequestEvent cancelJobEvent = CancelJobRequestEvent.builder()
+        DeleteJobEvent deleteJobEvent = DeleteJobEvent.builder()
                 .source(URI.create(TEST_SOURCE))
-                .jobId(JOB_ID_2)
+                .data(JobLookupId.fromId(JOB_ID_2))
                 .build();
-        String cancelJobEventJson = serializer.serialize(cancelJobEvent);
-        jobEventsEmitter.send(cancelJobEventJson);
+        String deleteJobEventJson = serializer.serialize(deleteJobEvent);
+        jobEventsEmitter.send(deleteJobEventJson);
 
         // wait until the job was canceled or fail if CALLBACK_EXECUTIONS_QUERY_TIMOUT_IN_SECONDS elapsed.
         waitUntilResult(() -> getJob(jobUrl),

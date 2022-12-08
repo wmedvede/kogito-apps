@@ -15,11 +15,16 @@
  */
 package org.kie.kogito.jobs.service.messaging;
 
+import java.time.ZonedDateTime;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.kie.kogito.jobs.api.event.CancelJobRequestEvent;
-import org.kie.kogito.jobs.api.event.CreateProcessInstanceJobRequestEvent;
-import org.kie.kogito.jobs.api.event.JobCloudEvent;
-import org.kie.kogito.jobs.api.event.serialization.JobCloudEventDeserializer;
+import org.kie.kogito.jobs.api.Job;
+import org.kie.kogito.jobs.service.api.event.CreateJobEvent;
+import org.kie.kogito.jobs.service.api.event.DeleteJobEvent;
+import org.kie.kogito.jobs.service.api.event.JobCloudEvent;
+import org.kie.kogito.jobs.service.api.event.serialization.JobCloudEventDeserializer;
+import org.kie.kogito.jobs.service.api.recipient.http.HttpRecipient;
+import org.kie.kogito.jobs.service.api.schedule.timer.TimerSchedule;
 import org.kie.kogito.jobs.service.exception.JobServiceException;
 import org.kie.kogito.jobs.service.model.JobStatus;
 import org.kie.kogito.jobs.service.model.ScheduledJob;
@@ -33,9 +38,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.cloudevents.CloudEvent;
 import io.smallrye.mutiny.Uni;
-
-import static org.kie.kogito.jobs.api.event.CancelJobRequestEvent.CANCEL_JOB_REQUEST;
-import static org.kie.kogito.jobs.api.event.CreateProcessInstanceJobRequestEvent.CREATE_PROCESS_INSTANCE_JOB_REQUEST;
 
 public abstract class ReactiveMessagingEventConsumer {
 
@@ -68,21 +70,21 @@ public abstract class ReactiveMessagingEventConsumer {
     protected Uni<Void> onKogitoServiceRequest(Message<CloudEvent> message) {
         final JobCloudEvent<?> jobCloudEvent = deserializer.deserialize(message.getPayload());
         switch (jobCloudEvent.getType()) {
-            case CREATE_PROCESS_INSTANCE_JOB_REQUEST:
-                return handleEvent(message, (CreateProcessInstanceJobRequestEvent) jobCloudEvent);
-            case CANCEL_JOB_REQUEST:
-                return handleEvent(message, (CancelJobRequestEvent) jobCloudEvent);
+            case CreateJobEvent.TYPE:
+                return handleEvent(message, (CreateJobEvent) jobCloudEvent);
+            case DeleteJobEvent.TYPE:
+                return handleEvent(message, (DeleteJobEvent) jobCloudEvent);
             default:
                 LOGGER.error("Unexpected job request type: {}, for the cloud event: {}", jobCloudEvent.getType(), jobCloudEvent);
                 return Uni.createFrom().completionStage(message.nack(new JobServiceException("Unexpected job request type: " + jobCloudEvent.getType())));
         }
     }
 
-    protected Uni<Void> handleEvent(Message<?> message, CreateProcessInstanceJobRequestEvent event) {
+    protected Uni<Void> handleEvent(Message<?> message, CreateJobEvent event) {
         return Uni.createFrom().completionStage(jobRepository.get(event.getData().getId()))
                 .flatMap(existingJob -> {
                     if (existingJob == null || existingJob.getStatus() == JobStatus.SCHEDULED) {
-                        return Uni.createFrom().publisher(scheduler.schedule(ScheduledJobAdapter.to(ScheduledJob.builder().job(event.getData()).build())));
+                        return Uni.createFrom().publisher(scheduler.schedule(ScheduledJobAdapter.to(ScheduledJob.builder().job(buildInternalJob(event.getData())).build())));
                     } else {
                         LOGGER.info("A Job in status: {} already exists for the job id: {}, no processing will be done fot the event: {}.",
                                 existingJob.getStatus(),
@@ -105,7 +107,7 @@ public abstract class ReactiveMessagingEventConsumer {
                 });
     }
 
-    protected Uni<Void> handleEvent(Message<?> message, CancelJobRequestEvent event) {
+    protected Uni<Void> handleEvent(Message<?> message, DeleteJobEvent event) {
         return Uni.createFrom().completionStage(scheduler.cancel(event.getData().getId()))
                 .onItemOrFailure().transformToUni((cancelledJob, throwable) -> {
                     if (throwable != null) {
@@ -119,5 +121,26 @@ public abstract class ReactiveMessagingEventConsumer {
                         return Uni.createFrom().completionStage(message.ack());
                     }
                 });
+    }
+
+    private static Job buildInternalJob(org.kie.kogito.jobs.service.api.Job job) {
+        TimerSchedule schedule = (TimerSchedule) job.getSchedule();
+        HttpRecipient recipient = (HttpRecipient) job.getRecipient();
+
+        Job internalJob = new Job();
+        internalJob.setId(job.getId());
+        internalJob.setExpirationTime(ZonedDateTime.parse(schedule.getStartTime()));
+        internalJob.setRepeatLimit(schedule.getRepeatCount());
+        internalJob.setRepeatInterval(schedule.getDelay());
+        internalJob.setPriority(0);
+        internalJob.setCallbackEndpoint(recipient.getUrl());
+
+        internalJob.setRootProcessId(recipient.getHeader("kogito-rootProcessId"));
+        internalJob.setProcessId(recipient.getHeader("kogito-processId"));
+        internalJob.setRootProcessInstanceId(recipient.getHeader("kogito-rootProcessInstanceId"));
+        internalJob.setProcessInstanceId(recipient.getHeader("kogito-processInstanceId"));
+        internalJob.setNodeInstanceId(recipient.getHeader("kogito-nodeInstanceId"));
+
+        return internalJob;
     }
 }

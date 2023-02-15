@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2023 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kie.kogito.job.http.recipient.converters;
 
-import org.kie.kogito.job.http.recipient.HTTPRequestCallback;
+package org.kie.kogito.job.sink.recipient;
 
-import io.vertx.core.http.HttpMethod;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
-public class HttpConverters {
+@ConfigRoot(name = "kogito.job.recipient.sink", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public class JobSinkRecipientConfiguration {
 
-    public static HttpMethod convertHttpMethod(HTTPRequestCallback.HTTPMethod method) {
-        return HttpMethod.valueOf(method.name());
-    }
+    /**
+     * Default timeout to execute HTTP requests for the Recipient
+     */
+    @ConfigItem(name = "timeout-in-millis", defaultValue = "5000")
+    long timeoutInMillis;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2023 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kie.kogito.jobs.service.executor;
+package org.kie.kogito.job.recipient.common.http.converters;
 
-import org.kie.kogito.jobs.service.api.Recipient;
-import org.kie.kogito.jobs.service.model.JobDetails;
-import org.kie.kogito.jobs.service.model.JobExecutionResponse;
+import org.kie.kogito.job.recipient.common.http.HTTPRequestCallback;
 
-import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpMethod;
 
-public interface JobExecutor {
+public class HttpConverters {
 
-    Uni<JobExecutionResponse> execute(JobDetails job);
-
-    default boolean accept(JobDetails job) {
-        return type().isAssignableFrom(job.getRecipient().getRecipient().getClass());
+    private HttpConverters() {
     }
 
-    Class<? extends Recipient> type();
+    public static HttpMethod convertHttpMethod(HTTPRequestCallback.HTTPMethod method) {
+        return HttpMethod.valueOf(method.name());
+    }
 }

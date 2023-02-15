@@ -13,33 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kie.kogito.job.http.recipient;
+
+package org.kie.kogito.job.sink.recipient;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.apache.commons.lang3.StringUtils;
 import org.kie.kogito.jobs.service.api.Recipient;
-import org.kie.kogito.jobs.service.api.recipient.http.HttpRecipient;
+import org.kie.kogito.jobs.service.api.recipient.sink.SinkRecipient;
 import org.kie.kogito.jobs.service.validator.RecipientValidator;
 
 @ApplicationScoped
-public class HttpRecipientValidator implements RecipientValidator {
+public class SinkRecipientValidator implements RecipientValidator {
 
     @Override
     public boolean accept(Recipient<?> recipient) {
-        return recipient instanceof HttpRecipient;
+        return recipient instanceof SinkRecipient;
     }
 
     @Override
     public boolean validate(Recipient<?> recipient) {
-        if (!(recipient instanceof HttpRecipient)) {
-            throw new IllegalArgumentException("Recipient must be a non-null instance of: " + HttpRecipient.class);
+        if (!(recipient instanceof SinkRecipient)) {
+            throw new IllegalArgumentException("Recipient must be a non-null instance of: " + SinkRecipient.class);
         }
-
-        if (StringUtils.isBlank(((HttpRecipient<?>) recipient).getUrl())) {
-            throw new IllegalArgumentException("HttpRecipient url must have a non empty value.");
-        }
-
+        //TODO complete the implementation.
         return true;
     }
 }

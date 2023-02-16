@@ -138,8 +138,8 @@ public class SinkJobExecutor extends HTTPRequestExecutor<SinkRecipient<?>> imple
         }
         filterEntries(recipient.getCeExtensions())
                 .forEach((key, value) -> eventBuilder.withExtension(key, value.toString()));
-        //TODO check here
-        eventBuilder.withExtension("limit", limit);
+        //TODO check here, never set null values
+        //eventBuilder.withExtension("limit", limit);
         if (recipient.getPayload() != null) {
             if (recipient.getPayload().getData() instanceof byte[]) {
                 eventBuilder.withData((byte[]) recipient.getPayload().getData());

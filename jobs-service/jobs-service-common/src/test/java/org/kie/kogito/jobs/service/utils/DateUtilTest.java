@@ -15,9 +15,11 @@
  */
 package org.kie.kogito.jobs.service.utils;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,5 +32,17 @@ class DateUtilTest {
         Date date = new Date();
         OffsetDateTime offsetDateTime = DateUtil.dateToOffsetDateTime(date);
         assertThat(offsetDateTime).isEqualTo(OffsetDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
+    }
+
+    @Test
+    void forceExpiredJobs() {
+        Optional<Boolean> forceExecuteExpiredJobs = Optional.ofNullable(true);
+
+        Duration duration = forceExecuteExpiredJobs
+                .filter(Boolean.TRUE::equals)
+                .map(f -> Duration.ofSeconds(1))
+                .orElse(Duration.ofSeconds(-1));
+
+
     }
 }

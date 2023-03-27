@@ -61,7 +61,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
      * Flag to allow and force a job with expirationTime in the past to be executed immediately. If false an
      * exception will be thrown.
      */
-    Optional<Boolean> forceExecuteExpiredJobs;
+    boolean forceExecuteExpiredJobs;
 
     /**
      * The current chunk size in minutes the scheduler handles, it is used to keep a limit number of jobs scheduled
@@ -74,20 +74,20 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
     private final Map<String, ZonedDateTime> schedulerControl;
 
     protected BaseTimerJobScheduler() {
-        this(null, 0, 0, 0, null);
+        this(null, 0, 0, 0, false);
     }
 
     protected BaseTimerJobScheduler(ReactiveJobRepository jobRepository,
             long backoffRetryMillis,
             long maxIntervalLimitToRetryMillis,
             long schedulerChunkInMinutes,
-            Boolean forceExecuteExpiredJobs) {
+            boolean forceExecuteExpiredJobs) {
         this.jobRepository = jobRepository;
         this.backoffRetryMillis = backoffRetryMillis;
         this.maxIntervalLimitToRetryMillis = maxIntervalLimitToRetryMillis;
         this.schedulerControl = new ConcurrentHashMap<>();
         this.schedulerChunkInMinutes = schedulerChunkInMinutes;
-        this.forceExecuteExpiredJobs = Optional.ofNullable(forceExecuteExpiredJobs);
+        this.forceExecuteExpiredJobs = forceExecuteExpiredJobs;
     }
 
     @Override
@@ -187,13 +187,14 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
     }
 
     private Duration calculateDelay(ZonedDateTime expirationTime) {
-        //in case forceExecuteExpiredJobs is true, execute the job immediately (1ms)
-        return Optional.of(Duration.between(DateUtil.now(), expirationTime))
-                .filter(d -> !d.isNegative())
-                .orElse(forceExecuteExpiredJobs
-                        .filter(Boolean.TRUE::equals)
-                        .map(f -> Duration.ofSeconds(1))
-                        .orElse(Duration.ofSeconds(-1)));
+        Duration delay = Duration.between(DateUtil.now(), expirationTime);
+        if (!delay.isNegative()) {
+            // Has not expired.
+            return delay;
+        }
+        // Has expired. In case forceExecuteExpiredJobs is true, execute the job immediately (1s), otherwise return (-1s).
+        // Callers know how to deal with that.
+        return forceExecuteExpiredJobs ? Duration.ofSeconds(1) : Duration.ofSeconds(-1);
     }
 
     public PublisherBuilder<JobDetails> handleJobExecutionSuccess(JobDetails futureJob) {
@@ -333,6 +334,6 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
     }
 
     public void setForceExecuteExpiredJobs(boolean forceExecuteExpiredJobs) {
-        this.forceExecuteExpiredJobs = Optional.of(forceExecuteExpiredJobs);
+        this.forceExecuteExpiredJobs = forceExecuteExpiredJobs;
     }
 }

@@ -16,7 +16,7 @@
 package org.kie.kogito.jobs.service.management;
 
 import java.time.OffsetDateTime;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import javax.enterprise.event.Event;
 
@@ -26,11 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.kie.kogito.jobs.service.model.JobServiceManagementInfo;
 import org.kie.kogito.jobs.service.repository.JobServiceManagementRepository;
 import org.kie.kogito.jobs.service.repository.impl.DefaultJobServiceManagementRepository;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.quarkus.runtime.ShutdownEvent;
@@ -47,7 +43,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class JobServiceInstanceManagerTest {
+class JobServiceInstanceManagerTest {
 
     @InjectMocks
     @Spy
@@ -63,7 +59,7 @@ public class JobServiceInstanceManagerTest {
     KafkaConnector kafkaConnector;
 
     @Mock
-    Event<MessagingChangeEvent> messagingChangeEventEvent;
+    Event<LeaderStatusChangeEvent> messagingChangeEventEvent;
 
     @Captor
     ArgumentCaptor<JobServiceManagementInfo> infoCaptor;
@@ -83,7 +79,7 @@ public class JobServiceInstanceManagerTest {
 
     @Test
     void startup() {
-        tested.startup(startupEvent);
+        tested.onStartup(startupEvent);
 
         assertThat(tested.getCurrentInfo()).isNotNull();
         verify(tested, times(1)).tryBecomeLeader(infoCaptor.capture(), any(TimeoutStream.class), any(TimeoutStream.class));
@@ -94,7 +90,7 @@ public class JobServiceInstanceManagerTest {
 
     @Test
     void onShutdown() {
-        tested.startup(startupEvent);
+        tested.onStartup(startupEvent);
         tested.onShutdown(shutdownEvent);
 
         verify(tested, times(1)).release(infoCaptor.capture());
@@ -105,7 +101,7 @@ public class JobServiceInstanceManagerTest {
     @Test
     void tryBecomeLeaderSuccess() {
         JobServiceManagementInfo info = new JobServiceManagementInfo("id", "token", OffsetDateTime.now());
-        ArgumentCaptor<Function<JobServiceManagementInfo, JobServiceManagementInfo>> updateFunction = ArgumentCaptor.forClass(Function.class);
+        ArgumentCaptor<UnaryOperator<JobServiceManagementInfo>> updateFunction = ArgumentCaptor.forClass(UnaryOperator.class);
 
         TimeoutStream checkLeader = vertx.timerStream(1);
         TimeoutStream heartbeat = vertx.timerStream(1);
@@ -119,7 +115,7 @@ public class JobServiceInstanceManagerTest {
         JobServiceManagementInfo info = new JobServiceManagementInfo("id", "token", OffsetDateTime.now());
         JobServiceManagementInfo info2 = new JobServiceManagementInfo("id2", "token2", OffsetDateTime.now());
         repository.set(info).await().indefinitely();
-        ArgumentCaptor<Function<JobServiceManagementInfo, JobServiceManagementInfo>> updateFunction = ArgumentCaptor.forClass(Function.class);
+        ArgumentCaptor<UnaryOperator<JobServiceManagementInfo>> updateFunction = ArgumentCaptor.forClass(UnaryOperator.class);
 
         TimeoutStream checkLeader = vertx.timerStream(1);
         TimeoutStream heartbeat = vertx.timerStream(1);
@@ -137,7 +133,7 @@ public class JobServiceInstanceManagerTest {
 
     @Test
     void heartbeatLeader() {
-        tested.startup(startupEvent);
+        tested.onStartup(startupEvent);
         tested.heartbeat(tested.getCurrentInfo()).await().indefinitely();
         verify(repository).heartbeat(tested.getCurrentInfo());
     }

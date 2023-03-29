@@ -165,6 +165,54 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
                         .onItem().transform(this::from));
     }
 
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDatesPaged(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            String orderBy,
+            boolean asc,
+            int offset,
+            int limit) {
+
+        String statusFilter = (status != null && status.length > 0) ? createStatusQuery(status) : null;
+        String fireTimeFilter = createTimeQuery("$1", "$2");
+        String orderByCriteria = "ORDER BY " + orderBy + " " + (asc ? "ASC" : "DESC");
+        String pageFilter = "LIMIT $3 OFFSET $4";
+        String queryFilter = statusFilter != null ? (statusFilter + " AND " + fireTimeFilter) : fireTimeFilter;
+
+        String findQuery = "SELECT " + JOB_DETAILS_COLUMNS + " FROM " + JOB_DETAILS_TABLE + " WHERE " + queryFilter + " " + orderByCriteria + " " + pageFilter;
+
+        System.out.println("XXXXX findQuery: " + findQuery);
+        return ReactiveStreams.fromPublisher(
+                client.preparedQuery(findQuery)
+                        .execute(Tuple.of(from.toOffsetDateTime(), to.toOffsetDateTime(), limit, offset))
+                        .onItem().transformToMulti(rowSet -> Multi.createFrom().iterable(rowSet))
+                        .onItem().transform(this::from));
+    }
+
+    public PublisherBuilder<JobDetails> findByStatusAndFireTime(ZonedDateTime fireTimeTo,
+            JobStatus[] status,
+            String orderBy,
+            boolean asc,
+            int offset,
+            int limit) {
+
+        String statusFilter = (status != null && status.length > 0) ? createStatusQuery(status) : null;
+        String fireTimeFilter = "fire_time <= $1";
+        String orderByCriteria = "ORDER BY " + orderBy + " " + (asc ? "ASC" : "DESC");
+        String pageFilter = "LIMIT $2 OFFSET $3";
+        String queryFilter = statusFilter != null ? (statusFilter + " AND " + fireTimeFilter) : fireTimeFilter;
+
+        String findQuery = "SELECT " + JOB_DETAILS_COLUMNS + " FROM " + JOB_DETAILS_TABLE + " WHERE " + queryFilter + " " + orderByCriteria + " " + pageFilter;
+
+        System.out.println("XXXXX findQuery: " + findQuery);
+        return ReactiveStreams.fromPublisher(
+                client.preparedQuery(findQuery)
+                        .execute(Tuple.of(fireTimeTo.toOffsetDateTime(), limit, offset))
+                        .onItem().transformToMulti(rowSet -> Multi.createFrom().iterable(rowSet))
+                        .onItem().transform(this::from));
+    }
+
     static String createStatusQuery(JobStatus... status) {
         return Arrays.stream(status).map(JobStatus::name)
                 .collect(Collectors.joining("', '", "status IN ('", "')"));

@@ -17,32 +17,36 @@ package org.kie.kogito.jobs.service.management;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.vertx.web.RouteFilter;
 import io.vertx.ext.web.RoutingContext;
 
+import static org.kie.kogito.jobs.service.management.LeaderStatusChangeEvent.LEADER_STATUS_CHANGE_INTERCEPTOR_HIGH_PRIORITY;
+
 @ApplicationScoped
 public class HttpGatekeeperFilter {
 
-    public static final String ERROR_MESSAGE = "Job Service instance is not master";
+    public static final String ERROR_MESSAGE = "Job Service instance is not master and can not serve requests.";
     private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @ConfigProperty(name = "quarkus.smallrye-health.root-path", defaultValue = "/q/health")
-    private String healthCheckPath;
+    String healthCheckPath;
 
-    protected void onMessagingStatusChange(@Observes MessagingChangeEvent event) {
-        this.enabled.set(event.isEnabled());
+    protected void onLeaderStatusChange(@Observes @Priority(LEADER_STATUS_CHANGE_INTERCEPTOR_HIGH_PRIORITY) LeaderStatusChangeEvent event) {
+        this.enabled.set(event.isLeader());
     }
 
     @RouteFilter(100)
-    void masterFilter(RoutingContext rc) throws Exception {
+    void masterFilter(RoutingContext rc) {
         if (!enabled.get() && !rc.request().path().contains(healthCheckPath)) {
             //block
-            rc.response().setStatusCode(503);
+            rc.response().setStatusCode(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
             rc.response().setStatusMessage(ERROR_MESSAGE);
             rc.end();
             return;

@@ -97,6 +97,16 @@ public class TimerDelegateJobScheduler extends BaseTimerJobScheduler {
                 .buildRs();
     }
 
+    /**
+     * Convenient method to allow the removal and cancelling of all the in-memory timers corresponding to the scheduled
+     * jobs. This method is called when current server abandon the leader status, and thus no more jobs must be fired
+     * on it, instead the next leader will handle them. The execution of this method has no impact on the DB.
+     */
+    public void removeScheduledJobHandles() {
+        getSchedulerControl().values().forEach(scheduledJobHandle -> delegate.removeJob(scheduledJobHandle.getHandle()));
+        getSchedulerControl().clear();
+    }
+
     //Stream Processors
 
     @Incoming(AvailableStreams.JOB_ERROR_EVENTS)

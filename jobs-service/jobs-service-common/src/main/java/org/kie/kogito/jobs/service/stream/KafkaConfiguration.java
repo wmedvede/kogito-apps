@@ -15,6 +15,7 @@
  */
 package org.kie.kogito.jobs.service.stream;
 
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +73,7 @@ public class KafkaConfiguration {
      * @param event Startup event
      */
     void topicConfiguration(StartupEvent event) {
+        System.out.println("XXXXXXXXXX KafkaConfiguration.topicConfiguration starting: " + OffsetDateTime.now());
         LOGGER.info("Kafka topic configuration check.");
         final Map<String, String> config = defaultKafkaConfiguration.get().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, el -> (String) el.getValue()));
@@ -84,6 +86,7 @@ public class KafkaConfiguration {
                                 .ifPresent(newTopic -> client.createTopics(Arrays.asList(newTopic))
                                         .subscribe()
                                         .with(r -> LOGGER.info("Created topic {}", topic)))));
+        System.out.println("XXXXXXXXXX JobSchedulerManager.toicConfiguration finished: " + OffsetDateTime.now());
     }
 
     private KafkaAdminClient getOrCreateClient(Map<String, String> config) {

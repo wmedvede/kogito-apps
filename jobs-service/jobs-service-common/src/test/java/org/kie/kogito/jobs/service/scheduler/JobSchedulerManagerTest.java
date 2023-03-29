@@ -24,7 +24,7 @@ import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.kie.kogito.jobs.service.management.MessagingChangeEvent;
+import org.kie.kogito.jobs.service.management.LeaderStatusChangeEvent;
 import org.kie.kogito.jobs.service.model.JobDetails;
 import org.kie.kogito.jobs.service.model.JobStatus;
 import org.kie.kogito.jobs.service.repository.ReactiveJobRepository;
@@ -92,7 +92,7 @@ class JobSchedulerManagerTest {
                 .thenReturn(Optional.empty());
         lenient().when(scheduler.schedule(scheduledJob))
                 .thenReturn(ReactiveStreams.of(scheduledJob).buildRs());
-        tested.onMessagingStatusChange(new MessagingChangeEvent(true));
+        tested.onLeaderStatusChange(LeaderStatusChangeEvent.leaderOn());
     }
 
     @Test

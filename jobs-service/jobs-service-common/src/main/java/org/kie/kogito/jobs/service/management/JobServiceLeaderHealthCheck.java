@@ -18,6 +18,7 @@ package org.kie.kogito.jobs.service.management;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
@@ -26,14 +27,16 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
+import static org.kie.kogito.jobs.service.management.LeaderStatusChangeEvent.LEADER_STATUS_CHANGE_INTERCEPTOR_HIGH_PRIORITY;
+
 @Readiness
 @ApplicationScoped
 public class JobServiceLeaderHealthCheck implements HealthCheck {
 
-    private AtomicBoolean enabled = new AtomicBoolean(false);
+    private final AtomicBoolean enabled = new AtomicBoolean(false);
 
-    protected void onMessagingStatusChange(@Observes MessagingChangeEvent event) {
-        this.enabled.set(event.isEnabled());
+    protected void onLeaderStatusChange(@Observes @Priority(LEADER_STATUS_CHANGE_INTERCEPTOR_HIGH_PRIORITY) LeaderStatusChangeEvent event) {
+        this.enabled.set(event.isLeader());
     }
 
     @Override

@@ -16,7 +16,7 @@
 package org.kie.kogito.jobs.service.repository.postgresql;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,7 +47,7 @@ public class PostgreSqlJobServiceManagementRepository implements JobServiceManag
         this.client = client;
     }
 
-    public Uni<JobServiceManagementInfo> getAndUpdate(String id, Function<JobServiceManagementInfo, JobServiceManagementInfo> computeUpdate) {
+    public Uni<JobServiceManagementInfo> getAndUpdate(String id, UnaryOperator<JobServiceManagementInfo> computeUpdate) {
         LOGGER.info("get {}", id);
         return client.withTransaction(conn -> conn
                 .preparedQuery("SELECT id, token, last_heartbeat FROM job_service_management WHERE id = $1 FOR UPDATE ")
@@ -95,5 +95,14 @@ public class PostgreSqlJobServiceManagementRepository implements JobServiceManag
                 .onItem().transform(RowSet::iterator)
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null)
                 .onItem().invoke(r -> LOGGER.debug("Heartbeat {}", r)));
+    }
+
+    @Override
+    public Uni<Boolean> clearHeartbeat(JobServiceManagementInfo info) {
+        return client.withTransaction(conn -> conn
+                .preparedQuery("UPDATE job_service_management SET token = null, last_heartbeat = null WHERE id = $1 AND token = $2 RETURNING id, token, last_heartbeat")
+                .execute(Tuple.of(info.getId(), info.getToken()))
+                .onItem().transform(rows -> rows.iterator().hasNext())
+                .onItem().invoke(result -> LOGGER.debug("Heartbeat clear for {}, was {}", info, result)));
     }
 }

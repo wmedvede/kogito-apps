@@ -15,8 +15,9 @@
  */
 package org.kie.kogito.jobs.service.repository.impl;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -31,10 +32,10 @@ import io.smallrye.mutiny.Uni;
 @ApplicationScoped
 public class DefaultJobServiceManagementRepository implements JobServiceManagementRepository {
 
-    private AtomicReference<JobServiceManagementInfo> instance = new AtomicReference<>(new JobServiceManagementInfo(null, null, null));
+    private final AtomicReference<JobServiceManagementInfo> instance = new AtomicReference<>(new JobServiceManagementInfo(null, null, null));
 
     @Override
-    public Uni<JobServiceManagementInfo> getAndUpdate(String id, Function<JobServiceManagementInfo, JobServiceManagementInfo> computeUpdate) {
+    public Uni<JobServiceManagementInfo> getAndUpdate(String id, UnaryOperator<JobServiceManagementInfo> computeUpdate) {
         return set(computeUpdate.apply(instance.get()));
     }
 
@@ -48,5 +49,15 @@ public class DefaultJobServiceManagementRepository implements JobServiceManageme
     public Uni<JobServiceManagementInfo> heartbeat(JobServiceManagementInfo info) {
         info.setLastHeartbeat(DateUtil.now().toOffsetDateTime());
         return set(info);
+    }
+
+    @Override
+    public Uni<Boolean> clearHeartbeat(JobServiceManagementInfo info) {
+        JobServiceManagementInfo actual = instance.get();
+        if (Objects.equals(actual.getId(), info.getId()) && Objects.equals(actual.getToken(), info.getToken())) {
+            instance.set(info);
+            return Uni.createFrom().item(true);
+        }
+        return Uni.createFrom().item(false);
     }
 }

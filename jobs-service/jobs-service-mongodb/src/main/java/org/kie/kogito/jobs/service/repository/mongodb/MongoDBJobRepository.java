@@ -166,6 +166,11 @@ public class MongoDBJobRepository extends BaseReactiveJobRepository implements R
                         .toPublisher());
     }
 
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDatesPaged(ZonedDateTime from, ZonedDateTime to, JobStatus[] status, String orderBy, boolean asc, int offset, int limit) {
+        return null;
+    }
+
     static JsonObject documentToJson(Document document) {
         return ofNullable(document).map(doc -> new JsonObject(doc.toJson(jsonWriterSettings))).orElse(null);
     }

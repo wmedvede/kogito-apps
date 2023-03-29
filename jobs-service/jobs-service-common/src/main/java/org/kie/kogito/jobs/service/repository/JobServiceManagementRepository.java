@@ -15,7 +15,7 @@
  */
 package org.kie.kogito.jobs.service.repository;
 
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.kie.kogito.jobs.service.model.JobServiceManagementInfo;
 
@@ -23,10 +23,11 @@ import io.smallrye.mutiny.Uni;
 
 public interface JobServiceManagementRepository {
 
-    Uni<JobServiceManagementInfo> getAndUpdate(String id, Function<JobServiceManagementInfo, JobServiceManagementInfo> computeUpdate);
+    Uni<JobServiceManagementInfo> getAndUpdate(String id, UnaryOperator<JobServiceManagementInfo> computeUpdate);
 
     Uni<JobServiceManagementInfo> set(JobServiceManagementInfo info);
 
     Uni<JobServiceManagementInfo> heartbeat(JobServiceManagementInfo info);
 
+    Uni<Boolean> clearHeartbeat(JobServiceManagementInfo info);
 }

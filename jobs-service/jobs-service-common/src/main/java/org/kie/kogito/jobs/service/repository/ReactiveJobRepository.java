@@ -41,4 +41,12 @@ public interface ReactiveJobRepository {
     PublisherBuilder<JobDetails> findAll();
 
     PublisherBuilder<JobDetails> findByStatusBetweenDatesOrderByPriority(ZonedDateTime from, ZonedDateTime to, JobStatus... status);
+
+    PublisherBuilder<JobDetails> findByStatusBetweenDatesPaged(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            String orderBy,
+            boolean asc,
+            int offset,
+            int limit);
 }

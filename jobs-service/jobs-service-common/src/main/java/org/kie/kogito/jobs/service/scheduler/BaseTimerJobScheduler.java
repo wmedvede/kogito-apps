@@ -36,7 +36,6 @@ import org.kie.kogito.jobs.service.model.JobStatus;
 import org.kie.kogito.jobs.service.model.ManageableJobHandle;
 import org.kie.kogito.jobs.service.repository.ReactiveJobRepository;
 import org.kie.kogito.jobs.service.utils.DateUtil;
-import org.kie.kogito.timer.JobHandle;
 import org.kie.kogito.timer.Trigger;
 import org.kie.kogito.timer.impl.PointInTimeTrigger;
 import org.reactivestreams.Publisher;
@@ -71,7 +70,25 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
 
     private ReactiveJobRepository jobRepository;
 
-    private final Map<String, ZonedDateTime> schedulerControl;
+    private final Map<String, ScheduledJobHandle> schedulerControl;
+
+    public class ScheduledJobHandle {
+        private final ManageableJobHandle handle;
+        private final ZonedDateTime time;
+
+        public ScheduledJobHandle(ManageableJobHandle handle, ZonedDateTime time) {
+            this.handle = handle;
+            this.time = time;
+        }
+
+        public ManageableJobHandle getHandle() {
+            return handle;
+        }
+
+        public ZonedDateTime getTime() {
+            return time;
+        }
+    }
 
     protected BaseTimerJobScheduler() {
         this(null, 0, 0, 0, null);
@@ -292,14 +309,15 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                 .peek(registerScheduledJob(job));
     }
 
-    private Consumer<JobHandle> registerScheduledJob(JobDetails job) {
-        return s -> schedulerControl.put(job.getId(), DateUtil.now());
+    private Consumer<ManageableJobHandle> registerScheduledJob(JobDetails job) {
+        return s -> schedulerControl.put(job.getId(), new ScheduledJobHandle(s, DateUtil.now()));
     }
 
     public abstract PublisherBuilder<ManageableJobHandle> doSchedule(JobDetails job, Optional<Trigger> trigger);
 
     private ZonedDateTime unregisterScheduledJob(JobDetails job) {
-        return schedulerControl.remove(job.getId());
+        ScheduledJobHandle scheduledJobHandle = schedulerControl.remove(job.getId());
+        return scheduledJobHandle != null ? scheduledJobHandle.getTime() : null;
     }
 
     public CompletionStage<JobDetails> cancel(CompletionStage<JobDetails> futureJob) {
@@ -327,9 +345,14 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
 
     public abstract Publisher<ManageableJobHandle> doCancel(JobDetails scheduledJob);
 
+    protected Map<String, ScheduledJobHandle> getSchedulerControl() {
+        return schedulerControl;
+    }
+
     @Override
     public Optional<ZonedDateTime> scheduled(String jobId) {
-        return Optional.ofNullable(schedulerControl.get(jobId));
+        ScheduledJobHandle scheduledJobHandle = schedulerControl.get(jobId);
+        return Optional.ofNullable(scheduledJobHandle != null ? scheduledJobHandle.getTime() : null);
     }
 
     public void setForceExecuteExpiredJobs(boolean forceExecuteExpiredJobs) {

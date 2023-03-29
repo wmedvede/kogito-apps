@@ -117,6 +117,11 @@ public class InfinispanJobRepository extends BaseReactiveJobRepository implement
         return ReactiveStreams.fromIterable(query.execute().list());
     }
 
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDatesPaged(ZonedDateTime from, ZonedDateTime to, JobStatus[] status, String orderBy, boolean asc, int offset, int limit) {
+        return null;
+    }
+
     //building the query sentence for the status IN (not supported to use array in setParameter on the query)
     private String createStatusQuery(JobStatus[] status) {
         return Arrays.stream(status)

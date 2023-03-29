@@ -64,7 +64,7 @@ public class JobServiceInstanceManager {
     KafkaConnector kafkaConnector;
 
     @Inject
-    Event<MessagingChangeEvent> messagingChangeEventEvent;
+    Event<LeaderStatusChangeEvent> leaderStatusChangeEvent;
 
     @Inject
     Vertx vertx;
@@ -80,7 +80,8 @@ public class JobServiceInstanceManager {
 
     private final AtomicBoolean leader = new AtomicBoolean(false);
 
-    void startup(@Observes StartupEvent startupEvent) {
+    void onStartup(@Observes StartupEvent startupEvent) {
+        System.out.println("XXXXXXXXXX JobServiceInstanceManager.startup starting: " + OffsetDateTime.now());
         buildAndSetInstanceInfo();
 
         //background task for leader check, it will be started after the first tryBecomeLeader() execution
@@ -101,26 +102,8 @@ public class JobServiceInstanceManager {
         tryBecomeLeader(currentInfo.get(), checkLeader, heartbeat)
                 .subscribe().with(i -> LOGGER.info("Initial check leader execution"),
                         ex -> LOGGER.error("Error on initial check leader", ex));
-    }
 
-    private void disableCommunication() {
-        //disable consuming events
-        kafkaConnector.getConsumerChannels().stream().forEach(c -> kafkaConnector.getConsumer(c).pause());
-
-        //disable producing events
-        messagingChangeEventEvent.fire(new MessagingChangeEvent(false));
-
-        LOGGER.warn("Disabled communication not leader instance");
-    }
-
-    private void enableCommunication() {
-        //enable consuming events
-        kafkaConnector.getConsumerChannels().stream().forEach(c -> kafkaConnector.getConsumer(c).resume());
-
-        //enable producing events
-        messagingChangeEventEvent.fire(new MessagingChangeEvent(true));
-
-        LOGGER.warn("Enabled communication for leader instance");
+        System.out.println("XXXXXXXXXX JobServiceInstanceManager.startup finalized!: " + OffsetDateTime.now());
     }
 
     void onShutdown(@Observes ShutdownEvent event) {
@@ -144,7 +127,7 @@ public class JobServiceInstanceManager {
     }
 
     protected Uni<JobServiceManagementInfo> tryBecomeLeader(JobServiceManagementInfo info, TimeoutStream checkLeader, TimeoutStream heartbeat) {
-        LOGGER.debug("Try to become Leader");
+        LOGGER.debug("Try to become Leader, server token: {}", info.getToken());
         return repository.getAndUpdate(info.getId(), c -> {
             final OffsetDateTime currentTime = DateUtil.now().toOffsetDateTime();
             if (Objects.isNull(c) || Objects.isNull(c.getToken()) || Objects.equals(c.getToken(), info.getToken()) || Objects.isNull(c.getLastHeartbeat())
@@ -152,16 +135,12 @@ public class JobServiceInstanceManager {
                 //old instance is not active
                 info.setLastHeartbeat(currentTime);
                 LOGGER.info("SET Leader {}", info);
-                leader.set(true);
-                enableCommunication();
-                heartbeat.resume();
-                checkLeader.pause();
+                setLeaderStatusOn();
                 return info;
             } else {
                 if (isLeader()) {
                     LOGGER.info("Not Leader");
-                    leader.set(false);
-                    disableCommunication();
+                    setLeaderLeaderStatusOff();
                 }
                 //stop heartbeats if running
                 heartbeat.pause();
@@ -172,12 +151,38 @@ public class JobServiceInstanceManager {
         });
     }
 
+    protected void setLeaderStatusOn() {
+        leader.set(true);
+        heartbeat.resume();
+        checkLeader.pause();
+        leaderStatusChangeEvent.fire(LeaderStatusChangeEvent.leaderOn());
+        enableCommunication();
+    }
+
+    protected void setLeaderLeaderStatusOff() {
+        leader.set(false);
+        disableCommunication();
+        leaderStatusChangeEvent.fire(LeaderStatusChangeEvent.leaderOff());
+    }
+
+    private void disableCommunication() {
+        //disable consuming events
+        kafkaConnector.getConsumerChannels().forEach(c -> kafkaConnector.getConsumer(c).pause());
+        LOGGER.warn("Disabled communication not leader instance");
+    }
+
+    private void enableCommunication() {
+        //enable consuming events
+        kafkaConnector.getConsumerChannels().forEach(c -> kafkaConnector.getConsumer(c).resume());
+        LOGGER.warn("Enabled communication for leader instance");
+    }
+
     protected Uni<Void> release(JobServiceManagementInfo info) {
-        return repository.set(new JobServiceManagementInfo(info.getId(), null, null))
+        return repository.clearHeartbeat(info)
                 .onItem().invoke(this::disableCommunication)
                 .onItem().invoke(i -> leader.set(false))
                 .onItem().invoke(i -> LOGGER.info("Leader instance released"))
-                .onFailure().invoke(ex -> LOGGER.error("Error releasing leader"))
+                .onFailure().invoke(ex -> LOGGER.error("Error releasing leader", ex))
                 .replaceWithVoid();
     }
 

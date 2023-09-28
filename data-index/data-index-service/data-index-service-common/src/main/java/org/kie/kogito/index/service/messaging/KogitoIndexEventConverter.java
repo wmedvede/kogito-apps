@@ -17,11 +17,13 @@ package org.kie.kogito.index.service.messaging;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.kie.kogito.event.AbstractDataEvent;
 import org.kie.kogito.event.process.ProcessInstanceDataEvent;
 import org.kie.kogito.event.process.ProcessInstanceEventBody;
 import org.kie.kogito.event.process.UserTaskInstanceDataEvent;
@@ -34,7 +36,12 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.message.MessageReader;
+import io.cloudevents.http.vertx.VertxMessageFactory;
+import io.quarkus.reactivemessaging.http.runtime.IncomingHttpMetadata;
 import io.smallrye.reactive.messaging.MessageConverter;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 
 /**
@@ -63,24 +70,22 @@ public class KogitoIndexEventConverter implements MessageConverter {
     @Override
     public Message<?> convert(Message<?> message, Type type) {
         try {
+            // quarkus-http connector case, let Vertx manage binary and structured mode.
+            IncomingHttpMetadata httpMetadata = message.getMetadata(IncomingHttpMetadata.class)
+                    .orElseThrow(() -> new IllegalStateException("No IncomingHttpMetadata metadata was found current message."));
+            CloudEvent cloudEvent;
+            MultiMap httpHeaders = httpMetadata.getHeaders();
+            LOGGER.info("Processing http metadata with httpHeaders: {}", httpHeaders);
+            Buffer buffer = (Buffer) message.getPayload();
+            MessageReader messageReader = VertxMessageFactory.createReader(httpHeaders, buffer);
+            cloudEvent = messageReader.toEvent();
+
             if (type.getTypeName().equals(ProcessInstanceDataEvent.class.getTypeName())) {
-                ProcessInstanceDataEvent processInstanceDataEvent = objectMapper.readValue(message.getPayload().toString(), ProcessInstanceDataEvent.class);
-                if (processInstanceDataEvent.getData() == null) {
-                    processInstanceDataEvent.setData(objectMapper.readValue(message.getPayload().toString(), ProcessInstanceEventBody.class));
-                }
-                return message.withPayload(processInstanceDataEvent);
+                return message.withPayload(buildProcessInstanceDataEvent(cloudEvent));
             } else if (type.getTypeName().equals(KogitoJobCloudEvent.class.getTypeName())) {
-                KogitoJobCloudEvent event = objectMapper.readValue(message.getPayload().toString(), KogitoJobCloudEvent.class);
-                if (event.getData() == null) {
-                    event.setData(objectMapper.readValue(message.getPayload().toString(), Job.class));
-                }
-                return message.withPayload(event);
+                return message.withPayload(buildKogitoJobCloudEvent(cloudEvent));
             } else if (type.getTypeName().equals(UserTaskInstanceDataEvent.class.getTypeName())) {
-                UserTaskInstanceDataEvent userTaskInstanceDataEvent = objectMapper.readValue(message.getPayload().toString(), UserTaskInstanceDataEvent.class);
-                if (userTaskInstanceDataEvent.getData() == null) {
-                    userTaskInstanceDataEvent.setData(objectMapper.readValue(message.getPayload().toString(), UserTaskInstanceEventBody.class));
-                }
-                return message.withPayload(userTaskInstanceDataEvent);
+                return message.withPayload(buildUserTaskInstanceDataEvent(cloudEvent));
             }
             return message;
         } catch (IOException e) {
@@ -92,5 +97,53 @@ public class KogitoIndexEventConverter implements MessageConverter {
     @Inject
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+    }
+
+    private ProcessInstanceDataEvent buildProcessInstanceDataEvent(CloudEvent cloudEvent) throws IOException {
+        return buildDataEvent(cloudEvent, ProcessInstanceDataEvent::new, ProcessInstanceEventBody.class);
+    }
+
+    private UserTaskInstanceDataEvent buildUserTaskInstanceDataEvent(CloudEvent cloudEvent) throws IOException {
+        return buildDataEvent(cloudEvent, UserTaskInstanceDataEvent::new, UserTaskInstanceEventBody.class);
+    }
+
+    private KogitoJobCloudEvent buildKogitoJobCloudEvent(CloudEvent cloudEvent) throws IOException {
+        KogitoJobCloudEvent jobCloudEvent = new KogitoJobCloudEvent();
+        jobCloudEvent.setId(cloudEvent.getId());
+        jobCloudEvent.setType(cloudEvent.getType());
+        jobCloudEvent.setSource(cloudEvent.getSource());
+        jobCloudEvent.setContentType(cloudEvent.getDataContentType());
+        jobCloudEvent.setSchemaURL(cloudEvent.getDataSchema());
+        jobCloudEvent.setSubject(cloudEvent.getSubject());
+        jobCloudEvent.setTime(cloudEvent.getTime() != null ? cloudEvent.getTime().toZonedDateTime() : null);
+        if (cloudEvent.getData() != null) {
+            jobCloudEvent.setData(objectMapper.readValue(cloudEvent.getData().toBytes(), Job.class));
+        }
+        return jobCloudEvent;
+    }
+
+    private <E extends AbstractDataEvent<T>, T> E buildDataEvent(CloudEvent cloudEvent, Supplier<E> supplier, Class<T> clazz) throws IOException {
+        E dataEvent = supplier.get();
+        applyCloudEventAttributes(cloudEvent, dataEvent);
+        applyExtensions(cloudEvent, dataEvent);
+        if (cloudEvent.getData() != null) {
+            dataEvent.setData(objectMapper.readValue(cloudEvent.getData().toBytes(), clazz));
+        }
+        return dataEvent;
+    }
+
+    private void applyCloudEventAttributes(CloudEvent cloudEvent, AbstractDataEvent<?> dataEvent) {
+        dataEvent.setSpecVersion(cloudEvent.getSpecVersion());
+        dataEvent.setId(cloudEvent.getId());
+        dataEvent.setType(cloudEvent.getType());
+        dataEvent.setSource(cloudEvent.getSource());
+        dataEvent.setDataContentType(cloudEvent.getDataContentType());
+        dataEvent.setDataSchema(cloudEvent.getDataSchema());
+        dataEvent.setSubject(cloudEvent.getSubject());
+        dataEvent.setTime(cloudEvent.getTime());
+    }
+
+    private void applyExtensions(CloudEvent cloudEvent, AbstractDataEvent<?> dataEvent) {
+        cloudEvent.getExtensionNames().forEach(extensionName -> dataEvent.addExtensionAttribute(extensionName, cloudEvent.getExtension(extensionName)));
     }
 }

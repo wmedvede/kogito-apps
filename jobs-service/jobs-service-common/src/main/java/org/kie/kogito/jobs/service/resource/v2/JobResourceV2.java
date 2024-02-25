@@ -18,12 +18,16 @@
  */
 package org.kie.kogito.jobs.service.resource.v2;
 
+import java.time.ZonedDateTime;
+import java.util.List;
+
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.kie.kogito.jobs.service.adapter.JobDetailsAdapter;
 import org.kie.kogito.jobs.service.api.Job;
 import org.kie.kogito.jobs.service.model.JobDetails;
 import org.kie.kogito.jobs.service.repository.ReactiveJobRepository;
 import org.kie.kogito.jobs.service.resource.RestApiConstants;
+import org.kie.kogito.jobs.service.scheduler.JobSchedulerManager;
 import org.kie.kogito.jobs.service.scheduler.impl.TimerDelegateJobScheduler;
 import org.kie.kogito.jobs.service.validation.JobValidator;
 import org.slf4j.Logger;
@@ -41,6 +45,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import static mutiny.zero.flow.adapters.AdaptersToFlow.publisher;
@@ -92,4 +97,22 @@ public class JobResourceV2 {
                 .onItem().ifNull().failWith(new NotFoundException("Job not found id " + id))
                 .onItem().transform(JobDetailsAdapter::toJob);
     }
+
+    @Inject
+    JobSchedulerManager jobSchedulerManager;
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/findJobs")
+    @Operation(operationId = "findJobsV2")
+    public List<Job> findJobs(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
+        List<JobDetails> result = jobSchedulerManager.pagedLoadJobsFromFireTime(ZonedDateTime.parse(from), ZonedDateTime.parse(to), pageSize);
+        return result.stream().map(JobDetailsAdapter::toJob).toList();
+        /*
+         * return Multi.createFrom().iterable(result)
+         * .onItem().transform(JobDetailsAdapter::toJob);
+         * 
+         */
+    }
+
 }

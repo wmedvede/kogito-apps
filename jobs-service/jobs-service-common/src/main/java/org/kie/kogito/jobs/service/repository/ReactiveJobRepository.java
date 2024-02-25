@@ -27,6 +27,33 @@ import org.kie.kogito.jobs.service.model.JobStatus;
 
 public interface ReactiveJobRepository {
 
+    enum SortTermField {
+        FIRE_TIME,
+        CREATED
+    }
+
+    class SortTerm {
+        private SortTermField field;
+        private boolean asc;
+
+        private SortTerm(SortTermField field, boolean asc) {
+            this.field = field;
+            this.asc = asc;
+        }
+
+        public SortTermField getField() {
+            return field;
+        }
+
+        public boolean isAsc() {
+            return asc;
+        }
+
+        public static SortTerm of(SortTermField field, boolean asc) {
+            return new SortTerm(field, asc);
+        }
+    }
+
     CompletionStage<JobDetails> save(JobDetails job);
 
     CompletionStage<JobDetails> merge(String id, JobDetails job);
@@ -44,4 +71,10 @@ public interface ReactiveJobRepository {
     PublisherBuilder<JobDetails> findAll();
 
     PublisherBuilder<JobDetails> findByStatusBetweenDatesOrderByPriority(ZonedDateTime from, ZonedDateTime to, JobStatus... status);
+
+    PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            SortTerm[] orderBy,
+            int offset, int limit);
 }

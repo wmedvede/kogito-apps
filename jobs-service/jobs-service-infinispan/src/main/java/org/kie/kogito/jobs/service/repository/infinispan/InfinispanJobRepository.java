@@ -126,4 +126,13 @@ public class InfinispanJobRepository extends BaseReactiveJobRepository implement
                 .map(JobStatus::name)
                 .collect(Collectors.joining("\', \'", "\'", "\'"));
     }
+
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            SortTerm[] orderBy,
+            int offset, int limit) {
+        return null;
+    }
 }

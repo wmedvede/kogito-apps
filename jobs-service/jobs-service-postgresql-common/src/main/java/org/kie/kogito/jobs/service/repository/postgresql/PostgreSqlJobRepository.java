@@ -61,7 +61,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
     private static final String JOB_DETAILS_TABLE = "job_details";
 
     private static final String JOB_DETAILS_COLUMNS = "id, correlation_id, status, last_update, retries, " +
-            "execution_counter, scheduled_id, priority, recipient, trigger, fire_time, execution_timeout, execution_timeout_unit";
+            "execution_counter, scheduled_id, priority, recipient, trigger, fire_time, execution_timeout, execution_timeout_unit, created";
 
     private PgPool client;
 
@@ -85,7 +85,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
     @Override
     public CompletionStage<JobDetails> doSave(JobDetails job) {
         return client.preparedQuery("INSERT INTO " + JOB_DETAILS_TABLE + " (" + JOB_DETAILS_COLUMNS +
-                ") VALUES ($1, $2, $3, now(), $4, $5, $6, $7, $8, $9, $10, $11, $12) " +
+                ") VALUES ($1, $2, $3, now(), $4, $5, $6, $7, $8, $9, $10, $11, $12, now()) " +
                 "ON CONFLICT (id) DO " +
                 "UPDATE SET correlation_id = $2, status = $3, last_update = now(), retries = $4, " +
                 "execution_counter = $5, scheduled_id = $6, priority = $7, " +
@@ -168,6 +168,31 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
                         .onItem().transform(this::from)));
     }
 
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            SortTerm[] orderBy,
+            int offset, int limit) {
+
+        String statusFilter = (status != null && status.length > 0) ? createStatusQuery(status) : null;
+        String fireTimeFilter = createTimeQuery("$1", "$2");
+        String orderByCriteria = (orderBy != null && orderBy.length > 0) ? createOrderBy(orderBy) : "";
+        String pageFilter = "LIMIT $3 OFFSET $4";
+        String queryFilter = statusFilter != null ? (statusFilter + " AND " + fireTimeFilter) : fireTimeFilter;
+
+        String findQuery = "SELECT " + JOB_DETAILS_COLUMNS +
+                " FROM " + JOB_DETAILS_TABLE +
+                " WHERE " + queryFilter +
+                " " + orderByCriteria + " " + pageFilter;
+
+        return ReactiveStreams.fromPublisher(publisher(
+                client.preparedQuery(findQuery)
+                        .execute(Tuple.of(from.toOffsetDateTime(), to.toOffsetDateTime(), limit, offset))
+                        .onItem().transformToMulti(rowSet -> Multi.createFrom().iterable(rowSet))
+                        .onItem().transform(this::from)));
+    }
+
     static String createStatusQuery(JobStatus... status) {
         return Arrays.stream(status).map(JobStatus::name)
                 .collect(Collectors.joining("', '", "status IN ('", "')"));
@@ -175,6 +200,23 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
 
     static String createTimeQuery(String indexFrom, String indexTo) {
         return String.format("fire_time BETWEEN %s AND %s", indexFrom, indexTo);
+    }
+
+    static String createOrderBy(SortTerm[] sortTerms) {
+        return Stream.of(sortTerms).map(PostgreSqlJobRepository::createOrderByTerm)
+                .collect(Collectors.joining(", ", "ORDER BY ", ""));
+    }
+
+    static String createOrderByTerm(SortTerm sortTerm) {
+        return toColumName(sortTerm.getField()) + (sortTerm.isAsc() ? " ASC" : " DESC");
+    }
+
+    static String toColumName(SortTermField field) {
+        return switch (field) {
+            case FIRE_TIME -> "fire_time";
+            case CREATED -> "created";
+            default -> throw new IllegalArgumentException("No colum name is defined for field: " + field);
+        };
     }
 
     JobDetails from(Row row) {
@@ -191,6 +233,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
                 .trigger(triggerMarshaller.unmarshall(row.get(JsonObject.class, "trigger")))
                 .executionTimeout(row.getLong("execution_timeout"))
                 .executionTimeoutUnit(Optional.ofNullable(row.getString("execution_timeout_unit")).map(ChronoUnit::valueOf).orElse(null))
+                .created(Optional.ofNullable(row.getOffsetDateTime("created")).map(t -> t.atZoneSameInstant(DEFAULT_ZONE)).orElse(null))
                 .build();
     }
 }

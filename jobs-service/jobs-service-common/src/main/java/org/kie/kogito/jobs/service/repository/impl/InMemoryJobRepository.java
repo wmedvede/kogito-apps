@@ -97,4 +97,13 @@ public class InMemoryJobRepository extends BaseReactiveJobRepository implements 
                         .sorted(Comparator.comparing(JobDetails::getPriority).reversed())
                         .collect(Collectors.toList()));
     }
+
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            SortTerm[] orderBy,
+            int offset, int limit) {
+        return null;
+    }
 }

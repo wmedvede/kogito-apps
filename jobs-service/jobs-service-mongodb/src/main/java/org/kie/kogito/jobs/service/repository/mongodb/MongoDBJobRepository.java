@@ -176,4 +176,13 @@ public class MongoDBJobRepository extends BaseReactiveJobRepository implements R
     static Document jsonToDocument(JsonObject jsonNode) {
         return ofNullable(jsonNode).map(json -> parse(json.toString())).orElse(null);
     }
+
+    @Override
+    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
+            ZonedDateTime to,
+            JobStatus[] status,
+            SortTerm[] orderBy,
+            int offset, int limit) {
+        return null;
+    }
 }

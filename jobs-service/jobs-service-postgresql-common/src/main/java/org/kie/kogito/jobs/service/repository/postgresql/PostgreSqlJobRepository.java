@@ -171,12 +171,14 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
     @Override
     public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
             ZonedDateTime to,
+            ZonedDateTime createdFrom,
             JobStatus[] status,
             SortTerm[] orderBy,
             int offset, int limit) {
 
         String statusFilter = (status != null && status.length > 0) ? createStatusQuery(status) : null;
         String fireTimeFilter = createTimeQuery("$1", "$2");
+        String createdFilter = createdFrom != null ? createdFromQuery("$5") : "";
         String orderByCriteria = (orderBy != null && orderBy.length > 0) ? createOrderBy(orderBy) : "";
         String pageFilter = "LIMIT $3 OFFSET $4";
         String queryFilter = statusFilter != null ? (statusFilter + " AND " + fireTimeFilter) : fireTimeFilter;
@@ -185,6 +187,11 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
                 " FROM " + JOB_DETAILS_TABLE +
                 " WHERE " + queryFilter +
                 " " + orderByCriteria + " " + pageFilter;
+
+        Tuple params = Tuple.of(from.toOffsetDateTime(), to.toOffsetDateTime(), limit, offset);
+        if (createdFrom != null) {
+            params.addOffsetDateTime(createdFrom.toOffsetDateTime());
+        }
 
         return ReactiveStreams.fromPublisher(publisher(
                 client.preparedQuery(findQuery)
@@ -200,6 +207,10 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
 
     static String createTimeQuery(String indexFrom, String indexTo) {
         return String.format("fire_time BETWEEN %s AND %s", indexFrom, indexTo);
+    }
+
+    static String createdFromQuery(String createdFrom) {
+        return String.format("AND created >= %s", createdFrom);
     }
 
     static String createOrderBy(SortTerm[] sortTerms) {

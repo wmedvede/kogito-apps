@@ -180,6 +180,7 @@ public class MongoDBJobRepository extends BaseReactiveJobRepository implements R
     @Override
     public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
             ZonedDateTime to,
+            ZonedDateTime createdFrom,
             JobStatus[] status,
             SortTerm[] orderBy,
             int offset, int limit) {

@@ -56,12 +56,17 @@ public class JobSchedulerManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JobSchedulerManager.class);
 
+    private static final Integer SCHEDULER_PAGE_SIZE = 2;
+
     /**
      * The current chunk size in minutes the scheduler handles, it is used to keep a limit number of jobs scheduled
      * in the in-memory scheduler.
      */
     @ConfigProperty(name = "kogito.jobs-service.schedulerChunkInMinutes", defaultValue = "10")
     long schedulerChunkInMinutes;
+
+    @ConfigProperty(name = "kogito.jobs-service.pageSize", defaultValue = "2")
+    int schedulerPageSize;
 
     /**
      * The interval the job loading method runs to fetch the persisted jobs from the repository.
@@ -94,9 +99,6 @@ public class JobSchedulerManager {
 
     @ConfigProperty(name = "test.InitialMaxFireTime")
     Optional<String> testInitialMaxFireTime;
-
-    @ConfigProperty(name = "test.pageSize", defaultValue = "2")
-    Optional<Integer> testPageSize;
 
     private void startJobsLoadingFromRepositoryTask() {
         //guarantee it starts the task just in case it is not already active
@@ -146,7 +148,7 @@ public class JobSchedulerManager {
         if (initialLoading.get()) {
             from = INITIAL_DATE;
         }
-        doLoadJobDetails(from, to, 0, testPageSize.orElse(2));
+        doLoadJobDetailsByCreated(from, to, INITIAL_DATE, 0, schedulerPageSize);
     }
 
     public void doLoadJobDetails(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, int offset, int pageSize) {
@@ -156,8 +158,12 @@ public class JobSchedulerManager {
         final AtomicInteger atomicOffset = new AtomicInteger(offset);
         final AtomicInteger retries = new AtomicInteger(4);
 
+        LOGGER.info("doLoadJobDetails, from: {}, to: {}, offset: {}, pageSize: {}", fromFireTime.toOffsetDateTime(), toFireTime.toOffsetDateTime(), offset, pageSize);
         loadJobsBetweenDates(nextFromFireTime.get(), toFireTime, atomicOffset.get(), pageSize)
                 .map(jobDetails -> {
+                    LOGGER.info("doLoadJobDetails, job found, id: {}, nextFireTime: {}, created: {} ", jobDetails.getId(),
+                            DateUtil.instantToZonedDateTime(jobDetails.getTrigger().hasNextFireTime().toInstant()).toOffsetDateTime(),
+                            jobDetails.getCreated());
                     //TODO, currentFireTime can be null?
                     currentFireTime.set(DateUtil.instantToZonedDateTime(jobDetails.getTrigger().hasNextFireTime().toInstant()));
                     if (currentFireTime.get().toInstant().equals(nextFromFireTime.get().toInstant())) {
@@ -174,15 +180,17 @@ public class JobSchedulerManager {
                 .forEach(jobDetails -> LOGGER.debug("Loaded and scheduled job {}", jobDetails))
                 .run()
                 .whenComplete((unused, throwable) -> {
+                    LOGGER.info("doLoadJobDetails, queryResultSize: {}, pageSize: {}", queryResultSize.get(), pageSize);
                     if (throwable != null) {
                         LOGGER.error("Error Loading scheduled jobs!", throwable);
-                        // Review this and emulate an excetion
+                        // Review this and emulate an exception
                         if (retries.decrementAndGet() >= 0) {
                             // doLoadJobDetails(fromFireTime, toFireTime, offset, pageSize);
                         } else {
                             // TODO, stop reading and disable current server.
                         }
                     } else if (queryResultSize.get() == 0 || queryResultSize.get() < pageSize) {
+
                         LOGGER.info("Loading scheduled jobs completed !");
                     } else {
                         doLoadJobDetails(nextFromFireTime.get(), toFireTime, atomicOffset.get(), pageSize);
@@ -190,8 +198,66 @@ public class JobSchedulerManager {
                 });
     }
 
+    public void doLoadJobDetailsByCreated(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, ZonedDateTime created, int offset, int pageSize) {
+        final AtomicReference<ZonedDateTime> createdFrom = new AtomicReference<>(created);
+        final AtomicReference<ZonedDateTime> currentCreatedFrom = new AtomicReference<>(created);
+        final AtomicInteger queryResultSize = new AtomicInteger();
+        final AtomicInteger atomicOffset = new AtomicInteger(offset);
+        final AtomicInteger retries = new AtomicInteger(4);
+
+        LOGGER.info("doLoadJobDetails, from: {}, to: {}, offset: {}, pageSize: {}", fromFireTime.toOffsetDateTime(), toFireTime.toOffsetDateTime(), offset, pageSize);
+        loadJobsBetweenDatesByCreated(fromFireTime, toFireTime, createdFrom.get(), atomicOffset.get(), pageSize)
+                .map(jobDetails -> {
+                    LOGGER.info("doLoadJobDetails, job found, id: {}, nextFireTime: {}, created: {} ", jobDetails.getId(),
+                            DateUtil.instantToZonedDateTime(jobDetails.getTrigger().hasNextFireTime().toInstant()).toOffsetDateTime(),
+                            jobDetails.getCreated());
+                    //TODO, currentFireTime can be null?
+                    currentCreatedFrom.set(DateUtil.instantToZonedDateTime(jobDetails.getCreated().toInstant()));
+                    if (createdFrom.get().toInstant().equals(currentCreatedFrom.get().toInstant())) {
+                        atomicOffset.incrementAndGet();
+                    } else {
+                        createdFrom.set(currentCreatedFrom.get());
+                        atomicOffset.set(1);
+                    }
+                    queryResultSize.incrementAndGet();
+                    return jobDetails;
+                })
+                .filter(jobDetails -> scheduler.scheduled(jobDetails.getId()).isEmpty()) //not consider already scheduled jobs
+                .flatMapRsPublisher(jobDetails -> ErrorHandling.skipErrorPublisher(scheduler::schedule, jobDetails))
+                .forEach(jobDetails -> LOGGER.debug("Loaded and scheduled job {}", jobDetails))
+                .run()
+                .whenComplete((unused, throwable) -> {
+                    LOGGER.info("doLoadJobDetails, queryResultSize: {}, pageSize: {}", queryResultSize.get(), pageSize);
+                    if (throwable != null) {
+                        LOGGER.error("Error Loading scheduled jobs!", throwable);
+                        // Review this and emulate an exception
+                        if (retries.decrementAndGet() >= 0) {
+                            // doLoadJobDetails(fromFireTime, toFireTime, offset, pageSize);
+                        } else {
+                            // TODO, stop reading and disable current server.
+                        }
+                    } else if (queryResultSize.get() == 0 || queryResultSize.get() < pageSize) {
+
+                        LOGGER.info("Loading scheduled jobs completed !");
+                    } else {
+                        doLoadJobDetailsByCreated(fromFireTime, toFireTime,  createdFrom.get(), atomicOffset.get(), pageSize);
+                    }
+                });
+    }
+
     private PublisherBuilder<JobDetails> loadJobsBetweenDates(ZonedDateTime fromFireTime, ZonedDateTime maxFireTime, int offset, int limit) {
         return repository.findByStatusBetweenDates(fromFireTime, maxFireTime,
+                null,
+                new JobStatus[] { JobStatus.SCHEDULED, JobStatus.RETRY },
+                new ReactiveJobRepository.SortTerm[] {
+                        ReactiveJobRepository.SortTerm.of(FIRE_TIME, true),
+                        ReactiveJobRepository.SortTerm.of(CREATED, true) },
+                offset, limit);
+    }
+
+    private PublisherBuilder<JobDetails> loadJobsBetweenDatesByCreated(ZonedDateTime fromFireTime, ZonedDateTime maxFireTime, ZonedDateTime createdFrom, int offset, int limit) {
+        return repository.findByStatusBetweenDates(fromFireTime, maxFireTime,
+                createdFrom,
                 new JobStatus[] { JobStatus.SCHEDULED, JobStatus.RETRY },
                 new ReactiveJobRepository.SortTerm[] {
                         ReactiveJobRepository.SortTerm.of(FIRE_TIME, true),
@@ -252,7 +318,6 @@ public class JobSchedulerManager {
         initialLoading.set(false);
         return result;
     }
-
 
     //TODO, Remove
     public List<JobDetails> pagedLoadJobsFromFireTime(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, int pageSize) {

@@ -19,6 +19,7 @@
 package org.kie.kogito.jobs.service.resource.v2;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -104,8 +105,9 @@ public class JobResourceV2 {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/findJobs")
-    @Operation(operationId = "findJobsV2")
+    @Operation(operationId = "findJobs")
     public List<Job> findJobs(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
+        LOGGER.debug("NO LOGS!");
         List<JobDetails> result = jobSchedulerManager.pagedLoadJobsFromFireTime(ZonedDateTime.parse(from), ZonedDateTime.parse(to), pageSize);
         return result.stream().map(JobDetailsAdapter::toJob).toList();
         /*
@@ -115,4 +117,12 @@ public class JobResourceV2 {
          */
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/loadJobDetails")
+    @Operation(operationId = "loadJobDetails")
+    public List<Job> loadJobDetails(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
+        jobSchedulerManager.doLoadJobDetails(ZonedDateTime.parse(from), ZonedDateTime.parse(to), 0, pageSize);
+        return new ArrayList<>();
+    }
 }

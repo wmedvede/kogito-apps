@@ -294,13 +294,13 @@ class PostgreSqlJobRepositoryExecutionTest {
 
     @Test
     void createStatusQuery() {
-        String statusQuery = PostgreSqlJobRepository.createStatusQuery(JobStatus.SCHEDULED, JobStatus.RETRY);
+        String statusQuery = PostgreSqlJobRepository.createStatusFilter(JobStatus.SCHEDULED, JobStatus.RETRY);
         assertEquals("status IN ('SCHEDULED', 'RETRY')", statusQuery);
     }
 
     @Test
     void createTimeQuery() {
-        String timeQuery = PostgreSqlJobRepository.createTimeQuery("$1", "$2");
+        String timeQuery = PostgreSqlJobRepository.createFireTimeFilter("$1", "$2");
         assertEquals("fire_time BETWEEN $1 AND $2", timeQuery);
     }
 

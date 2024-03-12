@@ -29,7 +29,8 @@ public interface ReactiveJobRepository {
 
     enum SortTermField {
         FIRE_TIME,
-        CREATED
+        CREATED,
+        ID
     }
 
     class SortTerm {
@@ -72,8 +73,8 @@ public interface ReactiveJobRepository {
 
     PublisherBuilder<JobDetails> findByStatusBetweenDatesOrderByPriority(ZonedDateTime from, ZonedDateTime to, JobStatus... status);
 
-    PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
-            ZonedDateTime to,
+    PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime nextFireTimeFrom,
+            ZonedDateTime nextFireTimeTo,
             ZonedDateTime createdFrom,
             JobStatus[] status,
             SortTerm[] orderBy,

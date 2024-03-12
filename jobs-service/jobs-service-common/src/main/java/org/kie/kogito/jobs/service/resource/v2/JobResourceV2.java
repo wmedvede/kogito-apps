@@ -122,7 +122,8 @@ public class JobResourceV2 {
     @Path("/loadJobDetails")
     @Operation(operationId = "loadJobDetails")
     public List<Job> loadJobDetails(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
-        jobSchedulerManager.doLoadJobDetails(ZonedDateTime.parse(from), ZonedDateTime.parse(to), 0, pageSize);
+        jobSchedulerManager.doLoadJobDetailsByCreated(ZonedDateTime.parse(from), ZonedDateTime.parse(to), ZonedDateTime.parse("2000-01-01T00:00:00.0+00"),
+                0, pageSize);
         return new ArrayList<>();
     }
 }

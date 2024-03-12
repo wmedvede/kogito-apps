@@ -50,6 +50,7 @@ import jakarta.inject.Inject;
 
 import static org.kie.kogito.jobs.service.repository.ReactiveJobRepository.SortTermField.CREATED;
 import static org.kie.kogito.jobs.service.repository.ReactiveJobRepository.SortTermField.FIRE_TIME;
+import static org.kie.kogito.jobs.service.repository.ReactiveJobRepository.SortTermField.ID;
 
 @ApplicationScoped
 public class JobSchedulerManager {
@@ -198,31 +199,32 @@ public class JobSchedulerManager {
                 });
     }
 
-    public void doLoadJobDetailsByCreated(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, ZonedDateTime created, int offset, int pageSize) {
-        final AtomicReference<ZonedDateTime> createdFrom = new AtomicReference<>(created);
-        final AtomicReference<ZonedDateTime> currentCreatedFrom = new AtomicReference<>(created);
+    public void doLoadJobDetailsByCreated(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, ZonedDateTime fromCreated, int offset, int pageSize) {
+        final AtomicReference<ZonedDateTime> nextFromCreated = new AtomicReference<>(fromCreated);
+        final AtomicReference<ZonedDateTime> currentCreated = new AtomicReference<>();
+        final AtomicInteger nextOffset = new AtomicInteger(offset);
         final AtomicInteger queryResultSize = new AtomicInteger();
-        final AtomicInteger atomicOffset = new AtomicInteger(offset);
         final AtomicInteger retries = new AtomicInteger(4);
 
-        LOGGER.info("doLoadJobDetails, from: {}, to: {}, offset: {}, pageSize: {}", fromFireTime.toOffsetDateTime(), toFireTime.toOffsetDateTime(), offset, pageSize);
-        loadJobsBetweenDatesByCreated(fromFireTime, toFireTime, createdFrom.get(), atomicOffset.get(), pageSize)
+        LOGGER.info("doLoadJobDetails, from: {}, to: {}, created: {}, offset: {}, pageSize: {}", fromFireTime.toOffsetDateTime(), toFireTime.toOffsetDateTime(), fromCreated.toOffsetDateTime(), offset,
+                pageSize);
+        loadJobsBetweenDatesByCreated(fromFireTime, toFireTime, fromCreated, offset, pageSize)
                 .map(jobDetails -> {
                     LOGGER.info("doLoadJobDetails, job found, id: {}, nextFireTime: {}, created: {} ", jobDetails.getId(),
                             DateUtil.instantToZonedDateTime(jobDetails.getTrigger().hasNextFireTime().toInstant()).toOffsetDateTime(),
                             jobDetails.getCreated());
-                    //TODO, currentFireTime can be null?
-                    currentCreatedFrom.set(DateUtil.instantToZonedDateTime(jobDetails.getCreated().toInstant()));
-                    if (createdFrom.get().toInstant().equals(currentCreatedFrom.get().toInstant())) {
-                        atomicOffset.incrementAndGet();
+                    //TODO, currentCreated can be null in infinispan or mongodb?
+                    currentCreated.set(DateUtil.instantToZonedDateTime(jobDetails.getCreated().toInstant()));
+                    if (nextFromCreated.get().toInstant().equals(currentCreated.get().toInstant())) {
+                        nextOffset.incrementAndGet();
                     } else {
-                        createdFrom.set(currentCreatedFrom.get());
-                        atomicOffset.set(1);
+                        nextFromCreated.set(currentCreated.get());
+                        nextOffset.set(1);
                     }
                     queryResultSize.incrementAndGet();
                     return jobDetails;
                 })
-                .filter(jobDetails -> scheduler.scheduled(jobDetails.getId()).isEmpty()) //not consider already scheduled jobs
+                .filter(jobDetails -> false && scheduler.scheduled(jobDetails.getId()).isEmpty()) //not consider already scheduled jobs
                 .flatMapRsPublisher(jobDetails -> ErrorHandling.skipErrorPublisher(scheduler::schedule, jobDetails))
                 .forEach(jobDetails -> LOGGER.debug("Loaded and scheduled job {}", jobDetails))
                 .run()
@@ -240,7 +242,7 @@ public class JobSchedulerManager {
 
                         LOGGER.info("Loading scheduled jobs completed !");
                     } else {
-                        doLoadJobDetailsByCreated(fromFireTime, toFireTime,  createdFrom.get(), atomicOffset.get(), pageSize);
+                        doLoadJobDetailsByCreated(fromFireTime, toFireTime, nextFromCreated.get(), nextOffset.get(), pageSize);
                     }
                 });
     }
@@ -260,8 +262,9 @@ public class JobSchedulerManager {
                 createdFrom,
                 new JobStatus[] { JobStatus.SCHEDULED, JobStatus.RETRY },
                 new ReactiveJobRepository.SortTerm[] {
+                        ReactiveJobRepository.SortTerm.of(CREATED, true),
                         ReactiveJobRepository.SortTerm.of(FIRE_TIME, true),
-                        ReactiveJobRepository.SortTerm.of(CREATED, true) },
+                        ReactiveJobRepository.SortTerm.of(ID, true) },
                 offset, limit);
     }
 

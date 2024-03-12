@@ -139,7 +139,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
 
     @Override
     public PublisherBuilder<JobDetails> findByStatus(JobStatus... status) {
-        String statusQuery = createStatusQuery(status);
+        String statusQuery = createStatusFilter(status);
         String query = " WHERE " + statusQuery;
         return ReactiveStreams.fromPublisher(publisher(
                 client.preparedQuery("SELECT " + JOB_DETAILS_COLUMNS + " FROM " + JOB_DETAILS_TABLE + query + " ORDER BY priority DESC LIMIT $1").execute(Tuple.of(MAX_ITEMS_QUERY))
@@ -157,8 +157,8 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
 
     @Override
     public PublisherBuilder<JobDetails> findByStatusBetweenDatesOrderByPriority(ZonedDateTime from, ZonedDateTime to, JobStatus... status) {
-        String statusQuery = createStatusQuery(status);
-        String timeQuery = createTimeQuery("$2", "$3");
+        String statusQuery = createStatusFilter(status);
+        String timeQuery = createFireTimeFilter("$2", "$3");
         String query = " WHERE " + statusQuery + " AND " + timeQuery;
 
         return ReactiveStreams.fromPublisher(publisher(
@@ -169,48 +169,53 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
     }
 
     @Override
-    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
-            ZonedDateTime to,
+    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime nextFireTimeFrom,
+            ZonedDateTime nextFireTimeTo,
             ZonedDateTime createdFrom,
             JobStatus[] status,
             SortTerm[] orderBy,
             int offset, int limit) {
 
-        String statusFilter = (status != null && status.length > 0) ? createStatusQuery(status) : null;
-        String fireTimeFilter = createTimeQuery("$1", "$2");
-        String createdFilter = createdFrom != null ? createdFromQuery("$5") : "";
+        String statusFilter = (status != null && status.length > 0) ? createStatusFilter(status) : null;
+        String fireTimeFilter = createFireTimeFilter("$1", "$2");
+        String createdFromFilter = createCreatedFromFilter("$3");
         String orderByCriteria = (orderBy != null && orderBy.length > 0) ? createOrderBy(orderBy) : "";
-        String pageFilter = "LIMIT $3 OFFSET $4";
-        String queryFilter = statusFilter != null ? (statusFilter + " AND " + fireTimeFilter) : fireTimeFilter;
+        String pageFilter = "LIMIT $4 OFFSET $5";
+        StringBuilder queryFilter = new StringBuilder();
+        if (statusFilter != null) {
+            queryFilter.append(statusFilter);
+            queryFilter.append(" AND ");
+        }
+        queryFilter.append(fireTimeFilter);
+        queryFilter.append(" AND ").append(createdFromFilter);
 
         String findQuery = "SELECT " + JOB_DETAILS_COLUMNS +
                 " FROM " + JOB_DETAILS_TABLE +
                 " WHERE " + queryFilter +
                 " " + orderByCriteria + " " + pageFilter;
 
-        Tuple params = Tuple.of(from.toOffsetDateTime(), to.toOffsetDateTime(), limit, offset);
-        if (createdFrom != null) {
-            params.addOffsetDateTime(createdFrom.toOffsetDateTime());
-        }
+        Tuple params = Tuple.of(nextFireTimeFrom.toOffsetDateTime(), nextFireTimeTo.toOffsetDateTime(),
+                createdFrom.toOffsetDateTime(),
+                limit, offset);
 
         return ReactiveStreams.fromPublisher(publisher(
                 client.preparedQuery(findQuery)
-                        .execute(Tuple.of(from.toOffsetDateTime(), to.toOffsetDateTime(), limit, offset))
+                        .execute(params)
                         .onItem().transformToMulti(rowSet -> Multi.createFrom().iterable(rowSet))
                         .onItem().transform(this::from)));
     }
 
-    static String createStatusQuery(JobStatus... status) {
+    static String createStatusFilter(JobStatus... status) {
         return Arrays.stream(status).map(JobStatus::name)
                 .collect(Collectors.joining("', '", "status IN ('", "')"));
     }
 
-    static String createTimeQuery(String indexFrom, String indexTo) {
+    static String createFireTimeFilter(String indexFrom, String indexTo) {
         return String.format("fire_time BETWEEN %s AND %s", indexFrom, indexTo);
     }
 
-    static String createdFromQuery(String createdFrom) {
-        return String.format("AND created >= %s", createdFrom);
+    static String createCreatedFromFilter(String indexCreatedFrom) {
+        return String.format("created >= %s", indexCreatedFrom);
     }
 
     static String createOrderBy(SortTerm[] sortTerms) {
@@ -226,6 +231,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
         return switch (field) {
             case FIRE_TIME -> "fire_time";
             case CREATED -> "created";
+            case ID -> "id";
             default -> throw new IllegalArgumentException("No colum name is defined for field: " + field);
         };
     }

@@ -86,7 +86,7 @@ public class InfinispanJobRepository extends BaseReactiveJobRepository implement
     }
 
     @Override
-    public CompletionStage<JobDetails> delete(String id) {
+    public CompletionStage<JobDetails> delete(String id, boolean softDelete) {
         return runAsync(() -> cache
                 .withFlags(Flag.FORCE_RETURN_VALUE)
                 .remove(id));

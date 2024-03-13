@@ -165,8 +165,8 @@ public abstract class BaseTimerJobSchedulerTest {
 
         CompletableFuture<JobDetails> scheduledJobCompletableFuture = CompletableFuture.completedFuture(scheduledJob);
 
-        lenient().when(jobRepository.delete(JOB_ID)).thenReturn(scheduledJobCompletableFuture);
-        lenient().when(jobRepository.delete(any(JobDetails.class))).thenReturn(scheduledJobCompletableFuture);
+        lenient().when(jobRepository.delete(JOB_ID, true)).thenReturn(scheduledJobCompletableFuture);
+        lenient().when(jobRepository.delete(any(JobDetails.class), true)).thenReturn(scheduledJobCompletableFuture);
         lenient().when(jobRepository.get(JOB_ID)).thenReturn(scheduledJobCompletableFuture);
 
         Publisher<JobDetails> schedule = tested().schedule(scheduledJob);
@@ -175,7 +175,7 @@ public abstract class BaseTimerJobSchedulerTest {
 
         subscribeOn(schedule);
 
-        verify(jobRepository, expired || SCHEDULED.equals(jobStatus) ? atLeastOnce() : never()).delete(any(JobDetails.class));
+        verify(jobRepository, expired || SCHEDULED.equals(jobStatus) ? atLeastOnce() : never()).delete(any(JobDetails.class), true);
         verify(tested(), expired ? never() : times(1)).doSchedule(eq(scheduledJob), delayCaptor.capture());
         verify(jobRepository, expired ? never() : times(1)).save(scheduleCaptor.capture());
 
@@ -305,14 +305,14 @@ public abstract class BaseTimerJobSchedulerTest {
 
         tested().cancel(CompletableFuture.completedFuture(scheduledJob));
         verify(tested()).doCancel(scheduledJob);
-        verify(jobRepository).delete(scheduledJob);
+        verify(jobRepository).delete(scheduledJob, true);
     }
 
     @Test
     void testCancelNotJobDetails() {
         tested().cancel(scheduled);
         verify(tested(), never()).doCancel(scheduledJob);
-        verify(jobRepository).delete(scheduledJob);
+        verify(jobRepository).delete(scheduledJob, true);
     }
 
     @Test
@@ -402,7 +402,7 @@ public abstract class BaseTimerJobSchedulerTest {
     void handleJobExecutionSuccess() throws Exception {
         scheduledJob = JobDetails.builder().id(JOB_ID).trigger(trigger).status(SCHEDULED).build();
         doReturn(CompletableFuture.completedFuture(scheduledJob)).when(jobRepository).get(JOB_ID);
-        doReturn(CompletableFuture.completedFuture(scheduledJob)).when(jobRepository).delete(any(JobDetails.class));
+        doReturn(CompletableFuture.completedFuture(scheduledJob)).when(jobRepository).delete(any(JobDetails.class), true);
         JobExecutionResponse response = new JobExecutionResponse("execution successful", "200", ZonedDateTime.now(), JOB_ID);
 
         Optional<JobDetails> result = tested().handleJobExecutionSuccess(response)
@@ -411,7 +411,7 @@ public abstract class BaseTimerJobSchedulerTest {
                 .toCompletableFuture()
                 .get();
 
-        verify(jobRepository).delete(scheduleCaptor.capture());
+        verify(jobRepository).delete(scheduleCaptor.capture(), true);
         JobDetails deletedJob = scheduleCaptor.getValue();
         assertThat(deletedJob).isNotNull();
         assertThat(deletedJob.getId()).isEqualTo(JOB_ID);
@@ -432,8 +432,8 @@ public abstract class BaseTimerJobSchedulerTest {
                 .get())
                         .hasCauseInstanceOf(JobServiceException.class)
                         .hasMessageContaining("Job: %s was not found in database.", JOB_ID);
-        verify(jobRepository, never()).delete(JOB_ID);
-        verify(jobRepository, never()).delete(any(JobDetails.class));
+        verify(jobRepository, never()).delete(JOB_ID, true);
+        verify(jobRepository, never()).delete(any(JobDetails.class), true);
         verify(jobRepository, never()).save(any());
     }
 }

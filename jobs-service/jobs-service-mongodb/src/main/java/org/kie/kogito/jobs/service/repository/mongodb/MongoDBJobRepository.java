@@ -134,7 +134,7 @@ public class MongoDBJobRepository extends BaseReactiveJobRepository implements R
     }
 
     @Override
-    public CompletionStage<JobDetails> delete(String id) {
+    public CompletionStage<JobDetails> delete(String id, boolean softDelete) {
         return collection.findOneAndDelete(eq(ID, id))
                 .map(document -> documentToJson(document))
                 .map(jobDetailsMarshaller::unmarshall)

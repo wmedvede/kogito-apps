@@ -186,6 +186,8 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                                             .flatMap(retryJob -> ReactiveStreams.empty());
                                 default:
                                     //empty to break the stream processing
+                                    //The stream will return nothing
+                                    //and the Uni will enter in the
                                     return ReactiveStreams.empty();
                             }
                         })
@@ -271,8 +273,8 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                         .filter(s -> !JobStatus.ERROR.equals(s))
                         .map(s -> scheduleRegistering(scheduledJob, Optional.of(getRetryTrigger())))
                         .flatMap(p -> p)
-                        .map(scheduleId -> JobDetails.builder()
-                                .of(jobWithStatusAndHandle(scheduledJob, JobStatus.RETRY, scheduleId))
+                        .map(registeredJobHandle -> JobDetails.builder()
+                                .of(jobWithStatusAndHandle(scheduledJob, JobStatus.RETRY, registeredJobHandle))
                                 .incrementRetries()
                                 .build())
                         .map(jobRepository::save)
@@ -289,7 +291,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
         return Optional.of(jobWithStatus(scheduledJob, JobStatus.ERROR))
                 //final state, removing the job
                 .map(j -> jobRepository
-                        .delete(j)
+                        .delete(j, true)
                         .thenApply(deleted -> {
                             unregisterScheduledJob(j);
                             LOGGER.warn("Retry limit exceeded for job{}", j);
@@ -321,7 +323,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                                 .onItem().transform(b -> scheduledJob))
                         .orElse(Uni.createFrom().item(scheduledJob)))
                 //final state, removing the job
-                .chain(job -> Uni.createFrom().completionStage(jobRepository.delete(job)))
+                .chain(job -> Uni.createFrom().completionStage(jobRepository.delete(job, true)))
                 .onItem().invoke(this::unregisterScheduledJob)
                 .convert().toCompletionStage();
     }

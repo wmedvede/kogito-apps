@@ -20,8 +20,10 @@ package org.kie.kogito.jobs.service.scheduler;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -243,6 +245,74 @@ public class JobSchedulerManager {
                         LOGGER.info("Loading scheduled jobs completed !");
                     } else {
                         doLoadJobDetailsByCreated(fromFireTime, toFireTime, nextFromCreated.get(), nextOffset.get(), pageSize);
+                    }
+                });
+    }
+
+    public void doLoadJobDetailsByCreatedOptimized(ZonedDateTime fromFireTime, ZonedDateTime toFireTime,
+            ZonedDateTime fromCreated,
+            Set<String> skippableJobs, int pageSize) {
+        final AtomicReference<ZonedDateTime> nextFromCreated = new AtomicReference<>(fromCreated);
+        final AtomicReference<ZonedDateTime> currentCreated = new AtomicReference<>();
+        final AtomicInteger queryResultSize = new AtomicInteger();
+        final AtomicInteger retries = new AtomicInteger(4);
+        final AtomicReference<Set<String>> nextSkippableJobs = new AtomicReference<>(new HashSet<>(skippableJobs));
+
+        LOGGER.info("doLoadJobDetailsByCreatedOptimized, from: {}, to: {}, created: {}, pageSize: {}, skippableJobs: {}",
+                fromFireTime.toOffsetDateTime(), toFireTime.toOffsetDateTime(), fromCreated.toOffsetDateTime(), pageSize, skippableJobs);
+
+        loadJobsBetweenDatesByCreated(fromFireTime, toFireTime, fromCreated, 0, pageSize)
+                .map(jobDetails -> {
+                    /*
+                     * LOGGER.info("doLoadJobDetails, job found, id: {}, nextFireTime: {}, created: {} ", jobDetails.getId(),
+                     * DateUtil.instantToZonedDateTime(jobDetails.getTrigger().hasNextFireTime().toInstant()).toOffsetDateTime(),
+                     * jobDetails.getCreated());
+                     */
+                    //TODO, currentCreated can be null in infinispan or mongodb?
+                    currentCreated.set(DateUtil.instantToZonedDateTime(jobDetails.getCreated().toInstant()));
+                    if (nextFromCreated.get().toInstant().equals(currentCreated.get().toInstant())) {
+                        nextSkippableJobs.get().add(jobDetails.getId());
+                    } else {
+                        nextSkippableJobs.get().clear();
+                        nextSkippableJobs.get().add(jobDetails.getId());
+                        nextFromCreated.set(currentCreated.get());
+                    }
+                    queryResultSize.incrementAndGet();
+                    return jobDetails;
+                })
+                .filter(jobDetails -> !skippableJobs.contains(jobDetails.getId()))
+                .map(jobDetails -> {
+                    LOGGER.info("XXXX - filteredJob, job found, id: {}, nextFireTime: {}, created: {} ", jobDetails.getId(),
+                            DateUtil.instantToZonedDateTime(jobDetails.getTrigger().hasNextFireTime().toInstant()).toOffsetDateTime(),
+                            jobDetails.getCreated());
+                    return jobDetails;
+                })
+                .filter(jobDetails -> false && scheduler.scheduled(jobDetails.getId()).isEmpty()) //not consider already scheduled jobs
+                .flatMapRsPublisher(jobDetails -> ErrorHandling.skipErrorPublisher(scheduler::schedule, jobDetails))
+                .forEach(jobDetails -> LOGGER.debug("Loaded and scheduled job {}", jobDetails))
+                .run()
+                .whenComplete((unused, throwable) -> {
+                    LOGGER.info("doLoadJobDetails, queryResultSize: {}, pageSize: {}", queryResultSize.get(), pageSize);
+                    if (throwable != null) {
+                        LOGGER.error("Error Loading scheduled jobs!", throwable);
+                        // Review this and emulate an exception
+                        if (retries.decrementAndGet() >= 0) {
+                            // doLoadJobDetails(fromFireTime, toFireTime, offset, pageSize);
+                        } else {
+                            // TODO, stop reading and disable current server.
+                        }
+                    } else if (queryResultSize.get() == 0 || queryResultSize.get() < pageSize) {
+
+                        LOGGER.info("Loading scheduled jobs completed !");
+                    } else {
+                        int nextPageSize = pageSize;
+                        if (nextSkippableJobs.get().size() > 1 || (pageSize == 1 && nextSkippableJobs.get().size() == 1)) {
+                            // considering that the created date is a timestamped value, the case that current page reading
+                            // finalizes with consecutive elements on exactly the same instant are very improbable.
+                            // Read from nextFromCreated increasing the pageSize assuming that penalization.
+                            nextPageSize = pageSize + 1;
+                        }
+                        doLoadJobDetailsByCreatedOptimized(fromFireTime, toFireTime, nextFromCreated.get(), nextSkippableJobs.get(), nextPageSize);
                     }
                 });
     }

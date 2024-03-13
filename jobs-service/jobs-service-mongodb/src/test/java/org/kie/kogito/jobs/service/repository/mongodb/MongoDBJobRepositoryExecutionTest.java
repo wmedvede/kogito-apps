@@ -193,7 +193,8 @@ class MongoDBJobRepositoryExecutionTest {
 
     @Test
     void delete() {
-        CompletionStage<JobDetails> result = mongoDBJobRepository.delete(unmarshalled.getId());
+        //TODO review this test
+        CompletionStage<JobDetails> result = mongoDBJobRepository.delete(unmarshalled.getId(), false);
         assertEquals(completableFuture, result);
 
         ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);

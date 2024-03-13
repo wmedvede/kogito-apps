@@ -129,7 +129,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
     }
 
     @Override
-    public CompletionStage<JobDetails> delete(String id) {
+    public CompletionStage<JobDetails> delete(String id, boolean softDelete) {
         return client.preparedQuery("DELETE FROM " + JOB_DETAILS_TABLE + " WHERE id = $1 RETURNING " + JOB_DETAILS_COLUMNS).execute(Tuple.of(id))
                 .onItem().transform(RowSet::iterator)
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null)

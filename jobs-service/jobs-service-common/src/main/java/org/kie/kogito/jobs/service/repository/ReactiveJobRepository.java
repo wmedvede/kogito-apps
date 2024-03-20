@@ -63,9 +63,9 @@ public interface ReactiveJobRepository {
 
     CompletionStage<Boolean> exists(String id);
 
-    CompletionStage<JobDetails> delete(String id, boolean softDelete);
+    CompletionStage<JobDetails> delete(String id);
 
-    CompletionStage<JobDetails> delete(JobDetails job, boolean softDelete);
+    CompletionStage<JobDetails> delete(JobDetails job);
 
     PublisherBuilder<JobDetails> findByStatus(JobStatus... status);
 

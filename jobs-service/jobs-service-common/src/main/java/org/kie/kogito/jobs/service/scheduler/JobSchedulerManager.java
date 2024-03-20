@@ -20,6 +20,7 @@ package org.kie.kogito.jobs.service.scheduler;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -74,7 +75,7 @@ public class JobSchedulerManager {
     /**
      * The interval the job loading method runs to fetch the persisted jobs from the repository.
      */
-    @ConfigProperty(name = "kogito.jobs-service.loadJobIntervalInMinutes", defaultValue = "2")
+    @ConfigProperty(name = "kogito.jobs-service.loadJobIntervalInMinutes", defaultValue = "10")
     long loadJobIntervalInMinutes;
 
     /**
@@ -99,9 +100,6 @@ public class JobSchedulerManager {
     final AtomicBoolean initialLoading = new AtomicBoolean(true);
 
     static final ZonedDateTime INITIAL_DATE = ZonedDateTime.parse("2000-01-01T00:00:00.0+00");
-
-    @ConfigProperty(name = "test.InitialMaxFireTime")
-    Optional<String> testInitialMaxFireTime;
 
     private void startJobsLoadingFromRepositoryTask() {
         //guarantee it starts the task just in case it is not already active
@@ -151,7 +149,7 @@ public class JobSchedulerManager {
         if (initialLoading.get()) {
             from = INITIAL_DATE;
         }
-        doLoadJobDetailsByCreated(from, to, INITIAL_DATE, 0, schedulerPageSize);
+        doLoadJobDetailsByCreatedOptimized(from, to, INITIAL_DATE, Collections.emptySet(), schedulerPageSize);
     }
 
     public void doLoadJobDetails(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, int offset, int pageSize) {
@@ -269,6 +267,7 @@ public class JobSchedulerManager {
                      * jobDetails.getCreated());
                      */
                     //TODO, currentCreated can be null in infinispan or mongodb?
+                    //This conversion is not needed.... at least for postgresql/infinispan, in mongodb.... dates are stored as Date...
                     currentCreated.set(DateUtil.instantToZonedDateTime(jobDetails.getCreated().toInstant()));
                     if (nextFromCreated.get().toInstant().equals(currentCreated.get().toInstant())) {
                         nextSkippableJobs.get().add(jobDetails.getId());
@@ -287,8 +286,9 @@ public class JobSchedulerManager {
                             jobDetails.getCreated());
                     return jobDetails;
                 })
-                .filter(jobDetails -> false && scheduler.scheduled(jobDetails.getId()).isEmpty()) //not consider already scheduled jobs
-                .flatMapRsPublisher(jobDetails -> ErrorHandling.skipErrorPublisher(scheduler::schedule, jobDetails))
+                //TODO WM remove, ahora envio todo para testear.
+                .filter(jobDetails -> true || scheduler.scheduled(jobDetails.getId()).isEmpty()) //not consider already scheduled jobs
+                .flatMapRsPublisher(jobDetails -> ErrorHandling.skipErrorPublisher((jd) -> scheduler.internalSchedule(jd, true), jobDetails))
                 .forEach(jobDetails -> LOGGER.debug("Loaded and scheduled job {}", jobDetails))
                 .run()
                 .whenComplete((unused, throwable) -> {
@@ -301,9 +301,10 @@ public class JobSchedulerManager {
                         } else {
                             // TODO, stop reading and disable current server.
                         }
-                    } else if (queryResultSize.get() == 0 || queryResultSize.get() < pageSize) {
+                    } else if (queryResultSize.get() == 0 || queryResultSize.get() < pageSize || pageSize == -1) {
 
                         LOGGER.info("Loading scheduled jobs completed !");
+                        initialLoading.set(false);
                     } else {
                         int nextPageSize = pageSize;
                         if (nextSkippableJobs.get().size() > 1 || (pageSize == 1 && nextSkippableJobs.get().size() == 1)) {

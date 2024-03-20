@@ -76,7 +76,7 @@ public class ReactiveMessagingEventConsumer {
 
     @Incoming(KOGITO_JOBS_EVENTS)
     public Uni<Void> onJobEvent(KogitoJobCloudEvent event) {
-        LOGGER.debug("Job received KogitoJobCloudEvent \n{}", event);
+        LOGGER.info("Job received KogitoJobCloudEvent \n{}", event);
         return Uni.createFrom().item(event)
                 .onItem().invoke(e -> indexingService.indexJob(e.getData()))
                 .onFailure().invoke(t -> LOGGER.error("Error processing job KogitoJobCloudEvent: {}", t.getMessage(), t))

@@ -97,7 +97,7 @@ public abstract class BaseJobRepositoryTest {
 
     @Test
     void testDelete() throws ExecutionException, InterruptedException {
-        JobDetails scheduledJob = tested().delete(ID, true).toCompletableFuture().get();
+        JobDetails scheduledJob = tested().delete(ID).toCompletableFuture().get();
         assertThat(scheduledJob).isEqualTo(job);
         JobDetails notFound = tested().get(ID).toCompletableFuture().get();
         assertThat(notFound).isNull();

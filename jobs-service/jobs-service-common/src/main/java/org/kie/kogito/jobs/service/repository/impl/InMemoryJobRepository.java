@@ -76,7 +76,7 @@ public class InMemoryJobRepository extends BaseReactiveJobRepository implements 
     }
 
     @Override
-    public CompletionStage<JobDetails> delete(String key, boolean softDelete) {
+    public CompletionStage<JobDetails> delete(String key) {
         return runAsync(() -> jobMap.remove(key));
     }
 

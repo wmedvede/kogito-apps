@@ -225,7 +225,7 @@ class PostgreSqlJobRepositoryExecutionTest {
 
     @Test
     void delete() {
-        CompletionStage<JobDetails> result = repository.delete("test", true);
+        CompletionStage<JobDetails> result = repository.delete("test");
         assertEquals(completableFuture, result);
 
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);

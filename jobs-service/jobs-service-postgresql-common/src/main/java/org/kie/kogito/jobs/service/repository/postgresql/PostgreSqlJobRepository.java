@@ -129,7 +129,7 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
     }
 
     @Override
-    public CompletionStage<JobDetails> delete(String id, boolean softDelete) {
+    public CompletionStage<JobDetails> delete(String id) {
         return client.preparedQuery("DELETE FROM " + JOB_DETAILS_TABLE + " WHERE id = $1 RETURNING " + JOB_DETAILS_COLUMNS).execute(Tuple.of(id))
                 .onItem().transform(RowSet::iterator)
                 .onItem().transform(iterator -> iterator.hasNext() ? from(iterator.next()) : null)
@@ -180,7 +180,8 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
         String fireTimeFilter = createFireTimeFilter("$1", "$2");
         String createdFromFilter = createCreatedFromFilter("$3");
         String orderByCriteria = (orderBy != null && orderBy.length > 0) ? createOrderBy(orderBy) : "";
-        String pageFilter = "LIMIT $4 OFFSET $5";
+        //String pageFilter = "LIMIT $4 OFFSET $5";
+
         StringBuilder queryFilter = new StringBuilder();
         if (statusFilter != null) {
             queryFilter.append(statusFilter);
@@ -189,14 +190,22 @@ public class PostgreSqlJobRepository extends BaseReactiveJobRepository implement
         queryFilter.append(fireTimeFilter);
         queryFilter.append(" AND ").append(createdFromFilter);
 
+        StringBuilder pageFilter = new StringBuilder();
+        if (limit >= 0) {
+            pageFilter.append("OFFSET $4 LIMIT $5");
+        }
+
         String findQuery = "SELECT " + JOB_DETAILS_COLUMNS +
                 " FROM " + JOB_DETAILS_TABLE +
                 " WHERE " + queryFilter +
                 " " + orderByCriteria + " " + pageFilter;
 
         Tuple params = Tuple.of(nextFireTimeFrom.toOffsetDateTime(), nextFireTimeTo.toOffsetDateTime(),
-                createdFrom.toOffsetDateTime(),
-                limit, offset);
+                createdFrom.toOffsetDateTime());
+        if (limit >= 0) {
+            params.addInteger(offset);
+            params.addInteger(limit);
+        }
 
         return ReactiveStreams.fromPublisher(publisher(
                 client.preparedQuery(findQuery)

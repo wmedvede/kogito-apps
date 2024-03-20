@@ -63,9 +63,10 @@ public class TimerDelegateJobScheduler extends BaseTimerJobScheduler {
             @ConfigProperty(name = "kogito.jobs-service.maxIntervalLimitToRetryMillis", defaultValue = "60000") long maxIntervalLimitToRetryMillis,
             @ConfigProperty(name = "kogito.jobs-service.schedulerChunkInMinutes", defaultValue = "10") long schedulerChunkInMinutes,
             @ConfigProperty(name = "kogito.jobs-service.forceExecuteExpiredJobs", defaultValue = "true") boolean forceExecuteExpiredJobs,
+            @ConfigProperty(name = "kogito.jobs-service.forceExecuteExpiredJobsOnServiceStart", defaultValue = "true") boolean forceExecuteExpiredJobsOnServiceStart,
             JobExecutorResolver jobExecutorResolver, VertxTimerServiceScheduler delegate,
             JobEventPublisher jobEventPublisher) {
-        super(jobRepository, backoffRetryMillis, maxIntervalLimitToRetryMillis, schedulerChunkInMinutes, forceExecuteExpiredJobs);
+        super(jobRepository, backoffRetryMillis, maxIntervalLimitToRetryMillis, schedulerChunkInMinutes, forceExecuteExpiredJobs, forceExecuteExpiredJobsOnServiceStart);
         this.jobExecutorResolver = jobExecutorResolver;
         this.delegate = delegate;
         this.jobEventPublisher = jobEventPublisher;
@@ -74,10 +75,9 @@ public class TimerDelegateJobScheduler extends BaseTimerJobScheduler {
     @Override
     public PublisherBuilder<ManageableJobHandle> doSchedule(JobDetails job, Optional<Trigger> trigger) {
         LOGGER.debug("Job Scheduling {}", job);
-        return ReactiveStreams
-                .of(job)
-                .map(j -> delegate.scheduleJob(new DelegateJob(jobExecutorResolver, jobEventPublisher), new JobDetailsContext(j),
-                        trigger.orElse(j.getTrigger())));
+        ManageableJobHandle jobHandle = delegate.scheduleJob(new DelegateJob(jobExecutorResolver, jobEventPublisher),
+                new JobDetailsContext(job), trigger.orElse(job.getTrigger()));
+        return ReactiveStreams.of(jobHandle);
     }
 
     @Override

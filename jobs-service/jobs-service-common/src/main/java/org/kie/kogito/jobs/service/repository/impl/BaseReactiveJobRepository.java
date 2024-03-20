@@ -62,14 +62,18 @@ public abstract class BaseReactiveJobRepository implements ReactiveJobRepository
     @Override
     public CompletionStage<JobDetails> save(JobDetails job) {
         return doSave(job)
-                .thenApply(jobEventPublisher::publishJobStatusChange);
+                .thenApply((jobDetails) -> {
+                    System.out.println("XXXX job saved: " + jobDetails);
+                    return jobEventPublisher.publishJobStatusChange(jobDetails);
+                }
+                );
     }
 
     public abstract CompletionStage<JobDetails> doSave(JobDetails job);
 
     @Override
-    public CompletionStage<JobDetails> delete(JobDetails job, boolean softDelete) {
-        return delete(job.getId(), softDelete)
+    public CompletionStage<JobDetails> delete(JobDetails job) {
+        return delete(job.getId())
                 .thenApply(j -> jobEventPublisher.publishJobStatusChange(job));
     }
 

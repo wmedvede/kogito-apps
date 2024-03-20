@@ -86,6 +86,8 @@ public class JobStreamsEventPublisher implements JobEventPublisher {
     }
 
     public JobDetails publishJobStatusChange(JobDetails scheduledJob) {
+        //TODO WM remove.
+        LOGGER.info("publishJobStatusChange: {} ", scheduledJob);
         jobStatusChangeEmitter.send(scheduledJob);
         return scheduledJob;
     }

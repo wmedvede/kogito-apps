@@ -31,6 +31,7 @@ import org.kie.kogito.jobs.service.repository.ReactiveJobRepository;
 import org.kie.kogito.jobs.service.resource.RestApiConstants;
 import org.kie.kogito.jobs.service.scheduler.JobSchedulerManager;
 import org.kie.kogito.jobs.service.scheduler.impl.TimerDelegateJobScheduler;
+import org.kie.kogito.jobs.service.utils.DateUtil;
 import org.kie.kogito.jobs.service.validation.JobValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,8 +124,14 @@ public class JobResourceV2 {
     @Path("/loadJobDetails")
     @Operation(operationId = "loadJobDetails")
     public List<Job> loadJobDetails(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
-        jobSchedulerManager.doLoadJobDetailsByCreatedOptimized(ZonedDateTime.parse(from), ZonedDateTime.parse(to), ZonedDateTime.parse("2000-01-01T00:00:00.0+00"),
-                Collections.EMPTY_SET, pageSize);
+        ZonedDateTime dFrom = DateUtil.instantToZonedDateTime(ZonedDateTime.parse(from).toInstant());
+        ZonedDateTime dTo = DateUtil.instantToZonedDateTime(ZonedDateTime.parse(to).toInstant());
+        ZonedDateTime dStartFrom = DateUtil.instantToZonedDateTime(ZonedDateTime.parse("2000-01-01T00:00:00.0+00").toInstant());
+        jobSchedulerManager.doLoadJobDetailsByCreatedOptimized(dFrom, dTo, dStartFrom, Collections.EMPTY_SET, pageSize);
+
+        //        jobSchedulerManager.doLoadJobDetailsByCreatedOptimized(ZonedDateTime.parse(from), ZonedDateTime.parse(to), ZonedDateTime.parse("2000-01-01T00:00:00.0+00"),
+        //                Collections.EMPTY_SET, pageSize);
+
         return new ArrayList<>();
     }
 }

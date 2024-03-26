@@ -81,7 +81,7 @@ public abstract class BaseTimerJobSchedulerTest {
     public CompletionStage<JobDetails> scheduled;
 
     @Captor
-    private ArgumentCaptor<Optional<Trigger>> delayCaptor;
+    private ArgumentCaptor<Trigger> delayCaptor;
 
     @Captor
     private ArgumentCaptor<JobDetails> scheduleCaptor;

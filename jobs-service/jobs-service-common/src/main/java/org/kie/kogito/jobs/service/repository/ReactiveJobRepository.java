@@ -73,10 +73,8 @@ public interface ReactiveJobRepository {
 
     PublisherBuilder<JobDetails> findByStatusBetweenDatesOrderByPriority(ZonedDateTime from, ZonedDateTime to, JobStatus... status);
 
-    PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime nextFireTimeFrom,
-            ZonedDateTime nextFireTimeTo,
-            ZonedDateTime createdFrom,
+    PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime fromFireTime,
+            ZonedDateTime toFireTime,
             JobStatus[] status,
-            SortTerm[] orderBy,
-            int offset, int limit);
+            SortTerm[] orderBy);
 }

@@ -128,12 +128,11 @@ public class InfinispanJobRepository extends BaseReactiveJobRepository implement
     }
 
     @Override
-    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime from,
-            ZonedDateTime to,
-            ZonedDateTime createdFrom,
+    public PublisherBuilder<JobDetails> findByStatusBetweenDates(ZonedDateTime fromFireTime,
+            ZonedDateTime toFireTime,
             JobStatus[] status,
-            SortTerm[] orderBy,
-            int offset, int limit) {
+            SortTerm[] orderBy) {
+        //WM TODO, implement this method
         return null;
     }
 }

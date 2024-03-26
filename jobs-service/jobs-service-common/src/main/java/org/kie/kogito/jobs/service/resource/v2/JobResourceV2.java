@@ -20,7 +20,6 @@ package org.kie.kogito.jobs.service.resource.v2;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -104,30 +103,15 @@ public class JobResourceV2 {
     @Inject
     JobSchedulerManager jobSchedulerManager;
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/findJobs")
-    @Operation(operationId = "findJobs")
-    public List<Job> findJobs(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
-        LOGGER.debug("NO LOGS!");
-        List<JobDetails> result = jobSchedulerManager.pagedLoadJobsFromFireTime(ZonedDateTime.parse(from), ZonedDateTime.parse(to), pageSize);
-        return result.stream().map(JobDetailsAdapter::toJob).toList();
-        /*
-         * return Multi.createFrom().iterable(result)
-         * .onItem().transform(JobDetailsAdapter::toJob);
-         * 
-         */
-    }
-
+    //TODO WM remove this method
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/loadJobDetails")
     @Operation(operationId = "loadJobDetails")
-    public List<Job> loadJobDetails(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("pageSize") int pageSize) {
+    public List<Job> loadJobDetails(@QueryParam("from") String from, @QueryParam("to") String to, @QueryParam("retries") int retries) {
         ZonedDateTime dFrom = DateUtil.instantToZonedDateTime(ZonedDateTime.parse(from).toInstant());
         ZonedDateTime dTo = DateUtil.instantToZonedDateTime(ZonedDateTime.parse(to).toInstant());
-        ZonedDateTime dStartFrom = DateUtil.instantToZonedDateTime(ZonedDateTime.parse("2000-01-01T00:00:00.0+00").toInstant());
-        jobSchedulerManager.doLoadJobDetailsByCreatedOptimized(dFrom, dTo, dStartFrom, Collections.EMPTY_SET, pageSize);
+        jobSchedulerManager.doLoadJobDetails(dFrom, dTo, retries);
 
         //        jobSchedulerManager.doLoadJobDetailsByCreatedOptimized(ZonedDateTime.parse(from), ZonedDateTime.parse(to), ZonedDateTime.parse("2000-01-01T00:00:00.0+00"),
         //                Collections.EMPTY_SET, pageSize);

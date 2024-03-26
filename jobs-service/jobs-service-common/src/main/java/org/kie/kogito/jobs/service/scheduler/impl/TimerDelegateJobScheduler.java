@@ -19,7 +19,6 @@
 package org.kie.kogito.jobs.service.scheduler.impl;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
@@ -73,10 +72,10 @@ public class TimerDelegateJobScheduler extends BaseTimerJobScheduler {
     }
 
     @Override
-    public PublisherBuilder<ManageableJobHandle> doSchedule(JobDetails job, Optional<Trigger> trigger) {
-        LOGGER.debug("Job Scheduling {}", job);
+    public PublisherBuilder<ManageableJobHandle> doSchedule(JobDetails job, Trigger trigger) {
+        LOGGER.debug("Job Scheduling job: {}, trigger: {}", job, trigger);
         ManageableJobHandle jobHandle = delegate.scheduleJob(new DelegateJob(jobExecutorResolver, jobEventPublisher),
-                new JobDetailsContext(job), trigger.orElse(job.getTrigger()));
+                new JobDetailsContext(job), trigger);
         return ReactiveStreams.of(jobHandle);
     }
 

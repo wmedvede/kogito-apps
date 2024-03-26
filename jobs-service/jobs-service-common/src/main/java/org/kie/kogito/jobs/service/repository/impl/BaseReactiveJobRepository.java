@@ -62,11 +62,7 @@ public abstract class BaseReactiveJobRepository implements ReactiveJobRepository
     @Override
     public CompletionStage<JobDetails> save(JobDetails job) {
         return doSave(job)
-                .thenApply((jobDetails) -> {
-                    System.out.println("XXXX job saved: " + jobDetails);
-                    return jobEventPublisher.publishJobStatusChange(jobDetails);
-                }
-                );
+                .thenApply(jobEventPublisher::publishJobStatusChange);
     }
 
     public abstract CompletionStage<JobDetails> doSave(JobDetails job);

@@ -164,11 +164,12 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                 .peek(delay -> Optional
                         .of(delay.isNegative())
                         .filter(Boolean.FALSE::equals)
-                        .orElseThrow(() -> new InvalidScheduleTimeException("The expirationTime should be greater than current " +
-                                "time")))
+                        .orElseThrow(() -> new InvalidScheduleTimeException(
+                                String.format("The expirationTime: %s, for job: %s should be greater than current time: %s.",
+                                        job.getTrigger().hasNextFireTime(), job.getId(), ZonedDateTime.now()))))
                 .flatMap(delay -> ReactiveStreams.fromCompletionStage(jobRepository.save(jobWithStatus(job, JobStatus.SCHEDULED))))
-                //schedule the job on the scheduler
-                .flatMap(j -> scheduleRegistering(job, Optional.empty()))
+                //schedule the job in the scheduler
+                .flatMap(j -> scheduleRegistering(job, job.getTrigger()))
                 .map(handle -> jobWithStatusAndHandle(job, JobStatus.SCHEDULED, handle))
                 .map(scheduledJob -> jobRepository.save(scheduledJob))
                 .flatMapCompletionStage(p -> p);
@@ -187,15 +188,12 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                         currentJob -> {
                             switch (currentJob.getStatus()) {
                                 case SCHEDULED:
-                                    // scheduled jobs are canceled.
+                                case RETRY:
+                                    // cancel the job.
                                     return ReactiveStreams.fromCompletionStage(
                                             cancel(CompletableFuture.completedFuture(jobWithStatus(currentJob, JobStatus.CANCELED))));
-                                case RETRY:
-                                    // retrying jobs are handled according to the retry procedure.
-                                    return handleRetry(CompletableFuture.completedFuture(currentJob))
-                                            .flatMap(retryJob -> ReactiveStreams.empty());
                                 default:
-                                    //empty to break the stream processing
+                                    // uncommon, break the stream processing
                                     return ReactiveStreams.empty();
                             }
                         })
@@ -214,12 +212,12 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                     // configured to fire overdue triggers at service startup. Always schedule.
                     PublisherBuilder<JobDetails> preSchedule;
                     if (job.getScheduledId() != null) {
-                        // cancel the existing timer if any. (no db changes)
+                        // cancel the existing timer if any.
                         preSchedule = ReactiveStreams.fromPublisher(doCancel(job)).flatMap(jobHandle -> ReactiveStreams.of(job));
                     } else {
                         preSchedule = ReactiveStreams.of(job);
                     }
-                    return preSchedule.flatMap(j -> scheduleRegistering(job, Optional.empty()))
+                    return preSchedule.flatMap(j -> scheduleRegistering(job, job.getTrigger()))
                             .map(handle -> jobWithStatusAndHandle(job, JobStatus.SCHEDULED, handle))
                             .map(scheduledJob -> jobRepository.save(scheduledJob))
                             .flatMapCompletionStage(p -> p);
@@ -242,7 +240,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
         if (!delay.isNegative()) {
             return delay;
         }
-        //in case forceExecuteExpiredJobs is true, execute the job immediately (1ms)
+        //in case forceExecuteExpiredJobs is true, execute the job immediately.
         return forceExecuteExpiredJobs ? Duration.ofSeconds(1) : Duration.ofSeconds(-1);
     }
 
@@ -281,11 +279,6 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                 .thenCompose(jobDetails -> CompletableFuture.completedFuture(Optional.ofNullable(jobDetails)));
     }
 
-    private boolean isExpired(JobDetails jobDetails) {
-        ZonedDateTime nextFireTime = DateUtil.fromDate(jobDetails.getTrigger().hasNextFireTime());
-        return isExpired(nextFireTime, jobDetails.getRetries());
-    }
-
     private boolean isExpired(ZonedDateTime expirationTime, int retries) {
         final Duration limit =
                 Duration.ofMillis(maxIntervalLimitToRetryMillis)
@@ -322,7 +315,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                 .flatMap(scheduledJob -> handleExpirationTime(scheduledJob)
                         .map(JobDetails::getStatus)
                         .filter(s -> !JobStatus.ERROR.equals(s))
-                        .map(s -> scheduleRegistering(scheduledJob, Optional.of(getRetryTrigger())))
+                        .map(s -> scheduleRegistering(scheduledJob, getRetryTrigger()))
                         .flatMap(p -> p)
                         .map(registeredJobHandle -> JobDetails.builder()
                                 .of(jobWithStatusAndHandle(scheduledJob, JobStatus.RETRY, registeredJobHandle))
@@ -351,7 +344,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
                 .orElse(null);
     }
 
-    private PublisherBuilder<ManageableJobHandle> scheduleRegistering(JobDetails job, Optional<Trigger> trigger) {
+    private PublisherBuilder<ManageableJobHandle> scheduleRegistering(JobDetails job, Trigger trigger) {
         return doSchedule(job, trigger)
                 .peek(registerScheduledJob(job));
     }
@@ -360,7 +353,7 @@ public abstract class BaseTimerJobScheduler implements ReactiveJobScheduler {
         return s -> schedulerControl.put(job.getId(), DateUtil.now());
     }
 
-    public abstract PublisherBuilder<ManageableJobHandle> doSchedule(JobDetails job, Optional<Trigger> trigger);
+    public abstract PublisherBuilder<ManageableJobHandle> doSchedule(JobDetails job, Trigger trigger);
 
     private ZonedDateTime unregisterScheduledJob(JobDetails job) {
         return schedulerControl.remove(job.getId());

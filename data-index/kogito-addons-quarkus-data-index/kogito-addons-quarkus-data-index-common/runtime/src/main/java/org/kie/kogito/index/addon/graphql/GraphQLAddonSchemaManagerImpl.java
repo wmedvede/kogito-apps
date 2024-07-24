@@ -32,6 +32,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class GraphQLAddonSchemaManagerImpl extends AbstractGraphQLSchemaManager {
 
     public GraphQLSchema createSchema() {
+
+        System.out.println("3XXXXXXXXXXXXXXXXXXXXXXXXXX GraphQLAddonSchemaManagerImpl. createSchema");
+
         TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
         typeDefinitionRegistry.merge(loadSchemaDefinitionFile("basic.schema.graphqls"));
 

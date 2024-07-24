@@ -44,18 +44,35 @@ public abstract class AbstractKogitoAddonsQuarkusDataIndexProcessor extends OneO
     private static final String KOGITO_SERVICE_URL_PROP = "kogito.service.url";
     private static final String KOGITO_DATA_INDEX_PROP = "kogito.data-index.url";
 
+    /**
+     * Skips the setting of the default calculation of the kogito.data-index.url. This is convenient in scenarios
+     * like the dev-ui executing in k8s where want it to set this url using window location. Must be explicitly set to
+     * true to take effect.
+     */
+    private static final String SKIP_DEFAULT_DATA_INDEX_URL_PROP = "kogito.data-index-addons.skip-default-data-index-url";
+
     AbstractKogitoAddonsQuarkusDataIndexProcessor() {
         super(KogitoCapability.SERVERLESS_WORKFLOW, KogitoCapability.PROCESSES);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void buildDefaultDataIndexURLSystemProperty(BuildProducer<SystemPropertyBuildItem> systemProperties) {
-        // Setting a default `kogito.data-index.url` accordingly to the runtime url.
-        String dataIndexUrl = ConfigProvider.getConfig().getOptionalValue(KOGITO_SERVICE_URL_PROP, String.class).orElseGet(() -> {
-            Integer port = ConfigProvider.getConfig().getOptionalValue(QUARKUS_HTTP_PORT, Integer.class).orElse(8080);
-            return "http://localhost:" + port;
-        });
-        systemProperties.produce(new SystemPropertyBuildItem(KOGITO_DATA_INDEX_PROP, dataIndexUrl));
+        boolean skipDefaultDataIndexUrl = ConfigProvider.getConfig().getOptionalValue(SKIP_DEFAULT_DATA_INDEX_URL_PROP, Boolean.class).orElse(false);
+        System.out.println("4XXXXXXXXXXXXXXXXXXXXXXXXXX skipDefaultDataIndexUrl: " + skipDefaultDataIndexUrl);
+        if (!skipDefaultDataIndexUrl) {
+            // Setting a default `kogito.data-index.url` accordingly to the runtime url.
+            String dataIndexUrl = ConfigProvider.getConfig().getOptionalValue(KOGITO_SERVICE_URL_PROP, String.class).orElseGet(() -> {
+                Integer port = ConfigProvider.getConfig().getOptionalValue(QUARKUS_HTTP_PORT, Integer.class).orElse(8080);
+                return "http://localhost:" + port;
+            });
+            systemProperties.produce(new SystemPropertyBuildItem(KOGITO_DATA_INDEX_PROP, dataIndexUrl));
+        }
+        /**
+         * Potential fix
+         * Agregamos una property extra, localDevelopment y se la pasamos a la UI de forma similar, acá o igual en otro sitio.
+         * y la UI basicamente en funcion de eso determina si usar el window.location.href
+         */
+
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

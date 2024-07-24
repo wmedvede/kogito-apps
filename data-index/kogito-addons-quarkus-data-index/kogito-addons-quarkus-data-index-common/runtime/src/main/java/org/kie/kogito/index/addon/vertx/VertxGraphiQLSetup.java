@@ -42,6 +42,7 @@ public class VertxGraphiQLSetup {
     String rootPath;
 
     void setupRouter(@Observes Router router) {
+        System.out.println("3XXXXXXXXXXXXXXXXXXXXXXXXXX VertxGraphiQLSetup. setupRouter");
         GraphiQLHandler graphiQLHandler = GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true));
         router.route(rootPath + path + "/graphql-ui/*").handler(graphiQLHandler);
     }

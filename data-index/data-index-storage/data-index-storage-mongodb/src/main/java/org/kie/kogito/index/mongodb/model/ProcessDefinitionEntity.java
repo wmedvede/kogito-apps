@@ -52,6 +52,8 @@ public class ProcessDefinitionEntity {
 
     private List<NodeEntity> nodes;
 
+    private String status;
+
     public String getId() {
         return id;
     }
@@ -156,6 +158,14 @@ public class ProcessDefinitionEntity {
         this.metadata = metadata;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -183,6 +193,7 @@ public class ProcessDefinitionEntity {
                 ", addons=" + addons +
                 ", endpoint='" + endpoint + '\'' +
                 ", nodes='" + nodes + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 

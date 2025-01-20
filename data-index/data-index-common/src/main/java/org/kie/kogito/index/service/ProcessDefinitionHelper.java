@@ -65,6 +65,7 @@ public class ProcessDefinitionHelper {
         instance.setMetadata(doMerge(toStringMap(data.getMetadata()), instance.getMetadata()));
         instance.setNodes(doMerge(nodeDefinitions(data), instance.getNodes()));
         instance.setSource(doMerge(data.getSource(), instance.getSource()));
+        instance.setStatus(doMerge(data.getStatus(), instance.getStatus()));
         return instance;
     }
 

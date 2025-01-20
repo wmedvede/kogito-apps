@@ -83,6 +83,8 @@ message ProcessDefinition {
     optional string description = 10;
     repeated string annotations = 11;
     repeated Entry metadata = 12;
+    /* @Field(store = Store.YES) @SortableField */
+    optional string status = 13;
 
 }
 

@@ -48,6 +48,7 @@ public class ProcessDefinitionMarshaller extends AbstractMarshaller implements M
     protected static final String ENDPOINT = "endpoint";
     protected static final String SOURCE = "source";
     protected static final String NODES = "nodes";
+    protected static final String STATUS = "status";
 
     public ProcessDefinitionMarshaller(ObjectMapper mapper) {
         super(mapper);
@@ -69,6 +70,7 @@ public class ProcessDefinitionMarshaller extends AbstractMarshaller implements M
         byte[] bytes = reader.readBytes(SOURCE);
         pd.setSource(bytes == null ? null : new String(bytes));
         pd.setNodes(reader.readCollection(NODES, new ArrayList<>(), Node.class));
+        pd.setStatus(reader.readString(STATUS));
         return pd;
     }
 
@@ -92,6 +94,7 @@ public class ProcessDefinitionMarshaller extends AbstractMarshaller implements M
         writer.writeString(ENDPOINT, pd.getEndpoint());
         writer.writeBytes(SOURCE, pd.getSource() == null ? null : pd.getSource().getBytes());
         writer.writeCollection(NODES, pd.getNodes(), Node.class);
+        writer.writeString(STATUS, pd.getStatus());
     }
 
     private static Set<Entry> buildMetadata(ProcessDefinition pd) {

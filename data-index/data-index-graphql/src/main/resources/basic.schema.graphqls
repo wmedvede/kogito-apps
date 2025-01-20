@@ -49,12 +49,14 @@ type ProcessDefinition {
     description: String
     annotations: [String]
     metadata: JSON
+    status: String
 }
 
 input ProcessDefinitionOrderBy {
     id: OrderBy
     name: OrderBy
     version: OrderBy
+    status: OrderBy
 }
 
 input ProcessDefinitionArgument {
@@ -64,6 +66,7 @@ input ProcessDefinitionArgument {
     id: StringArgument
     name: StringArgument
     version: StringArgument
+    status: StringArgument
 }
 
 type ProcessInstance {

@@ -53,6 +53,7 @@ public class ProcessDefinitionEntityMapper implements MongoEntityMapper<ProcessD
         entity.setEndpoint(pd.getEndpoint());
         entity.setSource(pd.getSource() == null ? null : pd.getSource().getBytes());
         entity.setNodes(pd.getNodes() == null ? null : pd.getNodes().stream().map(fromNode()).collect(toList()));
+        entity.setStatus(pd.getStatus());
         return entity;
     }
 
@@ -75,6 +76,7 @@ public class ProcessDefinitionEntityMapper implements MongoEntityMapper<ProcessD
         pd.setEndpoint(entity.getEndpoint());
         pd.setSource(entity.getSource() == null ? null : new String(entity.getSource()));
         pd.setNodes(entity.getNodes() == null ? null : entity.getNodes().stream().map(toNode()).collect(toList()));
+        pd.setStatus(entity.getStatus());
         return pd;
     }
 

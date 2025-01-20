@@ -82,6 +82,8 @@ public class ProcessDefinitionEntity extends AbstractEntity {
     @Column(name = "meta_value")
     private Map<String, String> metadata;
 
+    private String status;
+
     @Override
     public String getId() {
         return id;
@@ -177,6 +179,14 @@ public class ProcessDefinitionEntity extends AbstractEntity {
 
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     @Override

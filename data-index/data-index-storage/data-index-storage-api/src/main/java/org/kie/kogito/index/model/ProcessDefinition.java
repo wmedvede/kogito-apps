@@ -37,6 +37,7 @@ public class ProcessDefinition {
     private Set<String> annotations;
     private Map<String, String> metadata;
     private List<Node> nodes;
+    private String status;
 
     public String getId() {
         return id;
@@ -134,6 +135,14 @@ public class ProcessDefinition {
         this.metadata = metadata;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -160,6 +169,7 @@ public class ProcessDefinition {
                 ", addons=" + addons +
                 ", endpoint='" + endpoint + '\'' +
                 ", nodes='" + nodes + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }

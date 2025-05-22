@@ -97,6 +97,10 @@ public abstract class HTTPRequestExecutor<R extends Recipient<?>> {
         } catch (Throwable unexpected) {
             LOGGER.error("Executing error for {}", jobDetails.getId(), unexpected);
             return null;
+            //WM shadows a potential unexpected error, and also even the potential http response error to JobsService translation in handleResponse
+            // Unexpected error must throw JobExecutionException. See JobDelegate
+            //            throw new JobExecutionException(jobDetails.getId(),
+            //                    "Unexpected error when executing HTTP request for job: " + jobDetails.getId() + ". " + unexpected.getMessage());
         }
     }
 
@@ -126,16 +130,15 @@ public abstract class HTTPRequestExecutor<R extends Recipient<?>> {
                 uri.getPath()).timeout(timeout);
         clientRequest.queryParams().addAll(filterEntries(request.getQueryParams()));
         clientRequest.headers().addAll(filterEntries(request.getHeaders()));
-
+        //WM not needed assignment
         CompletionStage<HttpResponse<Buffer>> completionStage = null;
         if (request.getBody() != null) {
             completionStage = clientRequest.sendBuffer(buildBuffer(request.getBody())).toCompletionStage();
         } else {
             completionStage = clientRequest.send().toCompletionStage();
         }
-
+        //WM timeout is already set in the http invocation and also is in millis, this is not needed.
         return completionStage.toCompletableFuture().get(timeout, TimeUnit.SECONDS);
-
     }
 
     protected Buffer buildBuffer(Object body) {

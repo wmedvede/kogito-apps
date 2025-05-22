@@ -129,10 +129,18 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
      * Executed from the API to reflect client invocations.
      */
     @Override
+    //WM Bug / Changes con bug y changes
     public JobDetails schedule(JobDetails job) {
         LOGGER.debug("Scheduling job: {}", job);
         if (jobRepository.exists(job.getId())) {
             LOGGER.trace("Job already exists {}", job);
+            //WM Change Bug this can produce null pointers in the case the Job is not in an active state -> SCHEDULED, RETRY
+            // So the semantic is like this
+            // If the Job is active state, we cancel it: (kill the timer, delete from BD, notify the event, and remove from the memory map)
+            // and, since it was active, we let the scheduling continue. We are basically rescheduling.
+
+            //BUT, if the job was in a final state ERROR, EXECUTED, or CANCELED we basically must throw JobServiceException error.
+            // we don't want finalized jobs to be "rescheduled"
             jobRepository.delete(cancel(handleExistingJob(job)));
         }
         if (isOnCurrentSchedulerChunk(job)) {
@@ -140,6 +148,8 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
             job = doJobScheduling(job);
         } else {
             LOGGER.trace("Job will not be scheduled {} but will be saved", job);
+
+            //WM Change, save, and then publish the event
             JobDetails savedJob = jobRepository.save(jobWithStatus(job, JobStatus.SCHEDULED));
             getJobEventPublisher().ifPresent(p -> p.publishJobStatusChange(savedJob));
         }
@@ -150,6 +160,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
      * Internal use, executed by the periodic loader only. Jobs processed by this method belongs to the current chunk.
      */
     @Override
+    //WM OK
     public JobDetails internalSchedule(JobDetails job, boolean onServiceStart) {
         LOGGER.debug("Internal Scheduling, onServiceStart: {}, job: {}", onServiceStart, job);
         if (jobRepository.exists(job.getId())) {
@@ -159,6 +170,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         }
     }
 
+    //WM OK
     @Override
     public JobDetails reschedule(String jobId, Trigger trigger) {
         JobDetails currentJobDetails = jobRepository.get(jobId);
@@ -189,6 +201,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
     /**
      * Performs the given job scheduling process on the scheduler, after all the validations already made.
      */
+    //WM OK with Change
     private JobDetails doJobScheduling(JobDetails job) {
         Date date = job.getTrigger().hasNextFireTime();
         ZonedDateTime dateTime = DateUtil.fromDate(new Date(date.getTime()));
@@ -204,6 +217,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         LOGGER.trace("Saved job details before scheduling {} in {}", savedJobDetails, jobRepository.getClass().getName());
         ManageableJobHandle manageableJobHandle = scheduleRegistering(savedJobDetails, job.getTrigger());
         JobDetails scheduledJob = jobWithStatusAndHandle(savedJobDetails, JobStatus.SCHEDULED, manageableJobHandle);
+        //WM Change be sure we can save, then publish the event
         getJobEventPublisher().ifPresent(p -> p.publishJobStatusChange(scheduledJob));
         return jobRepository.save(scheduledJob);
     }
@@ -211,6 +225,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
     /**
      * Check if the job should be scheduled on the current chunk or saved to be scheduled later.
      */
+    //WM OK
     private boolean isOnCurrentSchedulerChunk(JobDetails job) {
         ZonedDateTime jobDateTime = DateUtil.fromDate(job.getTrigger().hasNextFireTime());
         ZonedDateTime maxSchedulerChunk = DateUtil.now().plusMinutes(schedulerChunkInMinutes);
@@ -219,6 +234,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         return isOnCurrentSchedulerChunk;
     }
 
+    //WM OK, pero con comments en el caller
     private JobDetails handleExistingJob(JobDetails job) {
         JobDetails savedJobDetails = jobRepository.get(job.getId());
         switch (savedJobDetails.getStatus()) {
@@ -232,6 +248,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         }
     }
 
+    //WM OK con Change
     private JobDetails handleInternalSchedule(JobDetails job, boolean onStart) {
         unregisterScheduledJob(job);
         switch (job.getStatus()) {
@@ -250,7 +267,8 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
                     ManageableJobHandle handle = scheduleRegistering(job, job.getTrigger());
                     JobDetails scheduledJob = jobWithStatusAndHandle(job, JobStatus.SCHEDULED, handle);
                     jobRepository.save(scheduledJob);
-
+                    //WM Change event notification is missing.
+                    //Before, it was done in the save method, now it was removed.
                 }
             case RETRY:
                 return handleRetry(job);
@@ -265,6 +283,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         return job;
     }
 
+    //WM OK
     private Duration calculateDelay(ZonedDateTime expirationTime) {
         Duration delay = Duration.between(DateUtil.now(), expirationTime);
         if (!delay.isNegative()) {
@@ -274,20 +293,28 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         return forceExecuteExpiredJobs ? Duration.ofSeconds(1) : Duration.ofSeconds(-1);
     }
 
+    //WM OK
     private Duration calculateRawDelay(ZonedDateTime expirationTime) {
         return Duration.between(DateUtil.now(), expirationTime);
     }
 
+    //WM Change
     public JobDetails handleJobExecutionSuccess(JobDetails futureJob) {
         futureJob.getTrigger().nextFireTime();
         if (Objects.nonNull(futureJob.getTrigger().hasNextFireTime())) {
             JobDetails nextJobDetails = JobDetails.builder().of(futureJob).incrementExecutionCounter().status(JobStatus.SCHEDULED).build();
             JobDetails newScheduledJobDetails = doJobScheduling(nextJobDetails);
+
+            //WM Change
+            //The job was scheduled to execute again so It't now scheduled.
+            //Don't save, was already saved in doJobScheduling and the event sent.
+            //The lines below don't go
             jobRepository.save(newScheduledJobDetails);
             JobDetails excecutedJobDetails = jobWithStatus(futureJob, JobStatus.EXECUTED);
             getJobEventPublisher().ifPresent(p -> p.publishJobStatusChange(excecutedJobDetails));
             return excecutedJobDetails;
         } else {
+            //WM this is ok
             JobDetails deletedExecutedJobDetails = jobRepository.delete(futureJob);
             JobDetails excecutedJobDetails = JobDetails.builder().of(deletedExecutedJobDetails).incrementExecutionCounter().status(JobStatus.EXECUTED).build();
             getJobEventPublisher().ifPresent(p -> p.publishJobStatusChange(excecutedJobDetails));
@@ -297,16 +324,19 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
     }
 
     @Override
+    //OK WM
     public JobDetails handleJobExecutionSuccess(JobExecutionResponse response) {
         String jobId = response.getJobId();
         Optional<JobDetails> jobDetails = this.readJob(jobId);
         return jobDetails.map(this::handleJobExecutionSuccess).orElseThrow(() -> new JobServiceException("Job: " + response.getJobId() + " was not found in database."));
     }
 
+    //OK WM
     private Optional<JobDetails> readJob(String jobId) {
         return Optional.ofNullable(jobRepository.get(jobId));
     }
 
+    // WM OK
     private boolean isExpired(ZonedDateTime expirationTime, int retries) {
         final Duration limit =
                 Duration.ofMillis(maxIntervalLimitToRetryMillis)
@@ -314,6 +344,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         return calculateDelay(expirationTime).plus(limit).isNegative();
     }
 
+    //WM OK
     private JobDetails handleExpirationTime(JobDetails scheduledJob) {
 
         Trigger trigger = scheduledJob.getTrigger();
@@ -341,7 +372,10 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         return handleRetry(jobRepository.get(errorResponse.getJobId()));
     }
 
+    //WM OK con Change
     private JobDetails handleRetry(JobDetails futureJob) {
+        //WM Change if for whatever reason the futureJob is null
+        //procesing belo
         try {
             JobDetails jobDetails = handleExpirationTime(futureJob);
             if (JobStatus.ERROR.equals(jobDetails.getStatus())) {
@@ -354,6 +388,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
                     .incrementRetries()
                     .build();
 
+            //WM Change save and then send the event with the just saved job
             getJobEventPublisher().ifPresent(p -> p.publishJobStatusChange(scheduledJobDetails));
             jobRepository.save(scheduledJobDetails);
             LOGGER.debug("Retry executed {}", futureJob);
@@ -365,11 +400,13 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
 
     }
 
+    //WM OK
     private PointInTimeTrigger getRetryTrigger() {
         return new PointInTimeTrigger(DateUtil.now().plus(backoffRetryMillis,
                 ChronoUnit.MILLIS).toInstant().toEpochMilli(), null, null);
     }
 
+    //WM OK
     private JobDetails handleExpiredJob(JobDetails scheduledJob) {
         JobDetails errorJobDetails = jobWithStatus(scheduledJob, JobStatus.ERROR);
         jobRepository.delete(errorJobDetails);
@@ -377,14 +414,15 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         LOGGER.warn("Retry limit exceeded for job{}", errorJobDetails);
         getJobEventPublisher().ifPresent(p -> p.publishJobStatusChange(errorJobDetails));
         return errorJobDetails;
-
     }
 
+    //WM OK
     private ManageableJobHandle scheduleRegistering(JobDetails job, Trigger trigger) {
         ManageableJobHandle handle = doSchedule(job, trigger);
         return registerScheduledJob(handle, job);
     }
 
+    //WM OK
     protected ManageableJobHandle registerScheduledJob(ManageableJobHandle handle, JobDetails job) {
         schedulerControl.put(job.getId(), new SchedulerControlRecord(job.getId(), handle.getId(), DateUtil.now()));
         return handle;
@@ -392,6 +430,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
 
     public abstract ManageableJobHandle doSchedule(JobDetails job, Trigger trigger);
 
+    //WM OK
     protected SchedulerControlRecord unregisterScheduledJob(JobDetails job) {
         return schedulerControl.remove(job.getId());
     }
@@ -400,6 +439,7 @@ public abstract class AbstractTimerJobScheduler implements JobScheduler<JobDetai
         return new ArrayList<>(schedulerControl.values());
     }
 
+    //WM OK
     public JobDetails cancel(JobDetails job) {
         LOGGER.debug("Cancel Job Scheduling {}", job);
         if (job.getScheduledId() != null) {

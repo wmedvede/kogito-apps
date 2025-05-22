@@ -52,6 +52,7 @@ public class HttpReactiveMessagingEventConsumer extends MessagingConsumer {
     @Acknowledgment(Acknowledgment.Strategy.MANUAL)
     @Retry(delay = 500, maxRetries = 4)
     public CompletionStage<Void> onKogitoMessage(Message<CloudEvent> message) {
+        //WM shadows blocking processing
         super.onMessage(message.getPayload(), () -> message.ack(), ex -> message.nack(ex));
         return CompletableFuture.<Void> completedStage(null);
     }

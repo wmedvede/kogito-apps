@@ -75,6 +75,7 @@ public class TimerDelegateJobScheduler extends AbstractTimerJobScheduler {
     }
 
     @Override
+    //WM OK
     public ManageableJobHandle doSchedule(JobDetails job, Trigger trigger) {
         LOGGER.debug("Job Scheduling job: {}, trigger: {}", job, trigger);
         JobDetailsContext jobDeailsContext = new JobDetailsContext(job);
@@ -83,6 +84,7 @@ public class TimerDelegateJobScheduler extends AbstractTimerJobScheduler {
     }
 
     @Override
+    //WM OK
     public ManageableJobHandle doCancel(JobDetails scheduledJob) {
         if (scheduledJob.getScheduledId() == null) {
             return null;

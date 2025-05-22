@@ -116,6 +116,7 @@ public class JobSchedulerManager {
         FAIL_SERVICE
     }
 
+    //WM OK
     private void startJobsLoadingFromRepositoryTask() {
         LOGGER.info(
                 "Starting with configuration: schedulerChunkInMinutes={}, loadJobIntervalInMinutes={}, loadJobFromCurrentTimeIntervalInMinutes={}, loadJobRetries={}, loadJobErrorStrategy={}",
@@ -138,13 +139,21 @@ public class JobSchedulerManager {
                         loadJobIntervalInMinutes);
 
             }
+            //Este ejecuta en el thread "main", NP
+            System.out.println("INITIAL LOAD JOB DETAILS: " + Thread.currentThread().getName() + " _ " + Thread.currentThread().getClass());
             //first execution
             this.loadJobDetails();
-            //next executions to run periodically
-            periodicTimerIdForLoadJobs.set(vertx.setPeriodic(TimeUnit.MINUTES.toMillis(loadJobIntervalInMinutes), id -> loadJobDetails()));
+            periodicTimerIdForLoadJobs.set(vertx.setPeriodic(TimeUnit.MINUTES.toMillis(loadJobIntervalInMinutes), id -> {
+                io.vertx.core.impl.VertxThread t = (io.vertx.core.impl.VertxThread) Thread.currentThread();
+                // NO PASA NADA
+                // vert.x-eventloop-thread-1 _ class io.vertx.core.impl.VertxThread isWorker: true
+                System.out.println("PERIODIC LOAD JOB DETAILS: " + Thread.currentThread().getName() + " _ " + Thread.currentThread().getClass() + " isWorker: " + true);
+                loadJobDetails();
+            }));
         }
     }
 
+    //WM OK
     private void cancelJobsLoadingFromRepositoryTask() {
         if (periodicTimerIdForLoadJobs.get() > 0) {
             vertx.cancelTimer(periodicTimerIdForLoadJobs.get());
@@ -153,7 +162,10 @@ public class JobSchedulerManager {
         }
     }
 
+    //WM OK
     protected synchronized void onMessagingStatusChange(@Observes MessagingChangeEvent event) {
+        //En principio no pasa nada con los threads Vertx son isWorker = true
+        System.out.println("ON MESSAGING STATUS CHANGE: " + Thread.currentThread().getName() + " _ " + Thread.currentThread().getClass());
         boolean wasEnabled = enabled.getAndSet(event.isEnabled());
         if (enabled.get() && !wasEnabled) {
             // good, avoid starting twice if we receive two consecutive enabled = true
@@ -180,8 +192,11 @@ public class JobSchedulerManager {
         doLoadJobDetails(fromFireTime, toFireTime, loadJobRetries);
     }
 
+    //WM Comments
     public void doLoadJobDetails(ZonedDateTime fromFireTime, ZonedDateTime toFireTime, final int retries) {
         LOGGER.info("Loading jobs to schedule from the repository, fromFireTime: {} toFireTime: {}.", fromFireTime, toFireTime);
+        // WM Comment the scheduler manager must also catch a potenial excption in loadJobsBetweenDates query
+        //and retry if there are retries left.
         List<JobDetails> jobsDetails = loadJobsBetweenDates(fromFireTime, toFireTime);
 
         Throwable throwable = null;
@@ -205,9 +220,9 @@ public class JobSchedulerManager {
         }
         initialLoading.set(false);
         LOGGER.info("Loading scheduled jobs completed !");
-
     }
 
+    //WM OK
     private boolean isNotScheduled(JobDetails jobDetails) {
         Date triggerFireTime = jobDetails.getTrigger().hasNextFireTime();
         ZonedDateTime nextFireTime = triggerFireTime != null ? DateUtil.instantToZonedDateTime(triggerFireTime.toInstant()) : null;
@@ -229,12 +244,14 @@ public class JobSchedulerManager {
         return !scheduled;
     }
 
+    //WM OK
     private List<JobDetails> loadJobsBetweenDates(ZonedDateTime fromFireTime, ZonedDateTime toFireTime) {
         return repository.findByStatusBetweenDates(fromFireTime, toFireTime,
                 new JobStatus[] { JobStatus.SCHEDULED, JobStatus.RETRY },
                 new JobRepository.SortTerm[] { byCreated(true), byFireTime(true), byId(true) });
     }
 
+    //WN OK
     private void applyLoadJobsErrorStrategy(Throwable throwable) {
         if (LoadJobErrorStrategy.FAIL_SERVICE.name().equalsIgnoreCase(loadJobErrorStrategy)) {
             scheduler.unscheduleTimers();

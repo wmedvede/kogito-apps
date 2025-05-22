@@ -96,10 +96,12 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
     private static final String DELETE = "DELETE FROM " + JOB_DETAILS_TABLE + " WHERE id = ? RETURNING " + JOB_DETAILS_COLUMNS;
 
     @Override
+    //WM Comments
     public JobDetails doSave(JobDetails job) {
         JobDetails next = null;
         String status = Optional.ofNullable(job.getStatus()).map(JobStatus::name).orElse(null);
         var timeoutUnit = Optional.ofNullable(job.getExecutionTimeoutUnit()).map(ChronoUnit::name).orElse(null);
+        //WM, the time is not shifted to the default zone?
         Timestamp fireTime = Optional.ofNullable(job.getTrigger()).map(Trigger::hasNextFireTime).map(date -> new java.sql.Timestamp(date.getTime())).orElse(null);
         try (Connection connection = client.getConnection(); PreparedStatement stmt = connection.prepareStatement(DO_SAVE)) {
             stmt.setString(1, job.getId());
@@ -115,16 +117,19 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             }
             JsonObject recipient = recipientMarshaller.marshall(job.getRecipient());
             if (recipient != null) {
+                //WM saving toString?
                 stmt.setObject(8, recipient.toString(), Types.OTHER);
             } else {
                 stmt.setNull(8, Types.OTHER);
             }
             JsonObject trigger = triggerMarshaller.marshall(job.getTrigger());
             if (trigger != null) {
+                //WM saving toString?
                 stmt.setObject(9, trigger.toString(), Types.OTHER);
             } else {
                 stmt.setNull(9, Types.OTHER);
             }
+            //WM there might be inermedial saves where fire time is null
             stmt.setTimestamp(10, fireTime);
             if (job.getExecutionTimeout() != null) {
                 stmt.setLong(11, job.getExecutionTimeout());
@@ -134,6 +139,7 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             stmt.setString(12, timeoutUnit);
 
             // on conflict
+            //WM can be null?
             stmt.setString(13, job.getCorrelationId());
             stmt.setObject(14, status);
             stmt.setInt(15, job.getRetries());
@@ -171,6 +177,7 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             return next;
         } catch (SQLException ex) {
             LOG.error("Error during job insertion in pgsql", ex);
+            // WM Comment exception shadowing.
             return null;
         }
 
@@ -188,6 +195,7 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             resultSet.close();
         } catch (SQLException ex) {
             LOG.error("Error during job insertion in pgsql", ex);
+            // WM Comment exception shadowing.
             return null;
         }
         return jobDetails;
@@ -210,6 +218,8 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             resultSet.close();
         } catch (SQLException ex) {
             LOG.error("Error during job insertion in pgsql", ex);
+            // WM Comment exception shadowing.
+
             return null;
         }
         return jobDetails;
@@ -240,6 +250,7 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
                 " " + orderByCriteria;
 
         String all = "SELECT " + JOB_DETAILS_COLUMNS + " FROM " + JOB_DETAILS_TABLE;
+        //WM What is this query for?
         try (Connection connection = client.getConnection(); Statement stmt = connection.createStatement()) {
             List<JobDetails> jobDetails = new ArrayList<>();
             ResultSet resultSet = stmt.executeQuery(all);
@@ -248,7 +259,7 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             }
             resultSet.close();
         } catch (SQLException ex) {
-
+            //WM exception shadowing
         }
         List<JobDetails> jobDetails = new ArrayList<>();
         try (Connection connection = client.getConnection(); PreparedStatement stmt = connection.prepareStatement(findQuery)) {
@@ -260,8 +271,13 @@ public class PostgreSqlJobRepository extends AbstractJobRepository implements Jo
             }
             resultSet.close();
         } catch (SQLException ex) {
+            //WM we can shadow this exception.
+            //If an error is produced, the periodic loader must know it, and act accordingly dependy on the
+            //retry policy.
             LOG.error("Error during job insertion in pgsql", ex);
             return emptyList();
+            // WM Comment exception shadowing.
+
         }
         return jobDetails;
     }

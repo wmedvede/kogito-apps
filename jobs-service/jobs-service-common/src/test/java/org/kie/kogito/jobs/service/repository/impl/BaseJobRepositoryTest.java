@@ -56,6 +56,7 @@ public abstract class BaseJobRepositoryTest {
     }
 
     @AfterEach
+    //WM exceptions not thrown anymore
     public void tearDown() throws Exception {
         tested().delete(ID);
     }
@@ -69,6 +70,7 @@ public abstract class BaseJobRepositoryTest {
     public abstract JobRepository tested();
 
     @Test
+    //WM exceptions not thrown anymore
     void testSaveAndGet() throws ExecutionException, InterruptedException {
         JobDetails scheduledJob = tested().get(ID);
         assertEqualsToReturnedJob(job, scheduledJob);
@@ -90,6 +92,7 @@ public abstract class BaseJobRepositoryTest {
     }
 
     @Test
+    //WM exceptions not thrown anymore
     void testExists() throws ExecutionException, InterruptedException {
         Boolean exists = tested().exists(ID);
         assertThat(exists).isTrue();
@@ -98,6 +101,7 @@ public abstract class BaseJobRepositoryTest {
     }
 
     @Test
+    //WM exceptions not thrown anymore
     void testDelete() throws ExecutionException, InterruptedException {
         JobDetails deletedJob = tested().delete(ID);
         assertEqualsToReturnedJob(job, deletedJob);
@@ -106,6 +110,7 @@ public abstract class BaseJobRepositoryTest {
     }
 
     @Test
+    //WM exceptions not thrown anymore
     void testFindByStatusBetweenDates() throws ExecutionException, InterruptedException {
         ZonedDateTime now = DateUtil.now();
         List<JobDetails> jobs = IntStream.rangeClosed(1, 10).boxed()

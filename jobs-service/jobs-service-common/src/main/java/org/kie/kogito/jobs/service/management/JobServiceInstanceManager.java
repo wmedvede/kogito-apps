@@ -171,7 +171,11 @@ public class JobServiceInstanceManager {
 
     private void internalregisterHeartbeat(Long id) {
         Callable<JobServiceManagementInfo> transacted = () -> {
-            LOGGER.debug("executing heartbeat {}", currentInfo.get());
+
+            io.vertx.core.impl.VertxThread t = (io.vertx.core.impl.VertxThread) Thread.currentThread();
+
+            //System.out.println("EXECUTING HEARTBET: " + Thread.currentThread().getName() + " " + Thread.currentThread().getClass() + " isWorker: " + t.isWorker());
+            LOGGER.debug("executing heartbeat {}" + Thread.currentThread().getName(), currentInfo.get());
             return heartbeat(currentInfo.get());
         };
         if (workerExecutor == null) {

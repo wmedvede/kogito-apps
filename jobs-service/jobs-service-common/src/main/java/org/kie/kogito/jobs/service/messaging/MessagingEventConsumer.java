@@ -75,6 +75,21 @@ public abstract class MessagingEventConsumer {
 
     protected void handleCreateEvent(CloudEvent message, JobDetails job, Runnable ackFunction, Consumer<Exception> nackFunction) {
         try {
+            Thread t = Thread.currentThread();
+            if (t instanceof io.vertx.core.impl.VertxThread) {
+                io.vertx.core.impl.VertxThread vt = (io.vertx.core.impl.VertxThread) Thread.currentThread();
+                System.out.println("RECEIVING CREATE EVENT: " + vt.getName() + " _ " + vt.getClass() + " isWorker: " + vt.isWorker());
+
+                Thread.sleep(1000 * 20);
+            } else {
+                System.out.println("RECEIVING CREATE EVENT: " + Thread.currentThread().getName() + " _ " + Thread.currentThread().getClass());
+            }
+
+            //WM This processing happens in the thread vertex event loop thread that delivers the event, we shouldn't execute blocking DB operations there.
+            // If something gets blocked, the events deliver might hold on, but also if taks more than "equis" time,
+            // Vertex will start complaining with warnings in the log about "blocked" thread.
+
+            // Is sync blocking processing needed for receiving the events?
             JobDetails existingJob = jobRepository.get(job.getId());
             if (existingJob == null || existingJob.getStatus() == JobStatus.SCHEDULED) {
                 scheduler.schedule(job);
@@ -87,6 +102,7 @@ public abstract class MessagingEventConsumer {
 
             }
             ackFunction.run();
+            //WM return not needed.
             return;
         } catch (Exception throwable) {
             String msg = String.format("An error was produced during Job scheduling for the event: %s", message);
@@ -97,6 +113,7 @@ public abstract class MessagingEventConsumer {
 
     protected void handleCancelEvent(CloudEvent message, String id, Runnable ackFunction, Consumer<Exception> nackFunction) {
         try {
+            //WM same comments as above
             JobDetails cancelledJob = scheduler.cancel(id);
             if (cancelledJob == null) {
                 LOGGER.info("No Job exists for the job id: {} or it was already cancelled", id);

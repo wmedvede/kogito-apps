@@ -96,6 +96,7 @@ public class VertxTimerServiceScheduler implements TimerService<ManageableJobHan
     }
 
     @Override
+    //WM OK
     public ManageableJobHandle scheduleJob(Job job, JobContext ctx, Trigger trigger) {
         return Optional.ofNullable(trigger)
                 .map(Trigger::hasNextFireTime)
@@ -113,6 +114,7 @@ public class VertxTimerServiceScheduler implements TimerService<ManageableJobHan
         return vertx.cancelTimer(jobHandle.getId());
     }
 
+    //WM OK
     @Override
     public void internalSchedule(TimerJobInstance timerJobInstance) {
         Trigger trigger = timerJobInstance.getTrigger();
@@ -129,6 +131,7 @@ public class VertxTimerServiceScheduler implements TimerService<ManageableJobHan
         handle.setScheduledTime(now);
     }
 
+    //WM OK
     private Handler<Long> execute(TimerJobInstance timerJobInstance) {
         return timerId -> {
             LOGGER.info("executing timeout {} for {}", timerId, timerJobInstance);
@@ -139,6 +142,7 @@ public class VertxTimerServiceScheduler implements TimerService<ManageableJobHan
         };
     }
 
+    //OK WM
     private long calculateDelay(long then, ZonedDateTime now) {
         long delay = then - now.toInstant().toEpochMilli();
         return Math.max(MIN_TIMER_DELAY, delay);

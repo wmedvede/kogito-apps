@@ -19,6 +19,7 @@
 package org.kie.kogito.jobs.service.job;
 
 import org.kie.kogito.jobs.service.exception.JobExecutionException;
+import org.kie.kogito.jobs.service.exception.JobServiceException;
 import org.kie.kogito.jobs.service.executor.JobExecutor;
 import org.kie.kogito.jobs.service.executor.JobExecutorResolver;
 import org.kie.kogito.jobs.service.model.JobDetails;
@@ -63,16 +64,19 @@ public class DelegateJob implements Job<JobDetailsContext> {
                     .message(ex.getMessage())
                     .now()
                     .jobId(jobDetails.getId())
+                    //WM we can't assume code 500 here, executors are not necessary http
                     .code("500")
                     .build();
 
             handleJobExecutionError(errorResponse);
         } catch (Exception ex) {
+            //WM exception thrown in this block?
             LOGGER.error("Unexpected error during the job execution: {}", ex.getMessage());
             JobExecutionResponse errorResponse = JobExecutionResponse.builder()
                     .message(ex.getMessage())
                     .now()
                     .jobId(jobDetails.getId())
+                    //WM we can't assume code 500 here, since the executor is not always HTTP
                     .code("500")
                     .build();
 
@@ -83,6 +87,9 @@ public class DelegateJob implements Job<JobDetailsContext> {
 
     public JobDetails handleJobExecutionSuccess(JobExecutionResponse response) {
         LOGGER.info("Job execution success response received: {}", response);
+        if ("TRES".equals(response.getJobId())) {
+            throw new JobServiceException("Reventando job execution success: " + response.getJobId());
+        }
         return scheduler.handleJobExecutionSuccess(response);
     }
 

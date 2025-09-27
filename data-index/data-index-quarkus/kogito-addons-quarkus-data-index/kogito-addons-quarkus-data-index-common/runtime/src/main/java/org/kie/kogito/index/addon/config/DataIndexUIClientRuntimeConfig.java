@@ -29,14 +29,14 @@ import io.smallrye.config.WithName;
 public interface DataIndexUIClientRuntimeConfig {
 
     /**
-     * Data Index HTTP URL
+     * Data Index HTTP URL.
      */
     @WithName("http.url")
     @WithDefault("http://localhost:${quarkus.http.port}")
     String dataIndexHttpUrl();
 
     /**
-     * Data Index WS URL
+     * Data Index WS URL.
      */
     @WithName("ws.url")
     @WithDefault("ws://localhost:${quarkus.http.port}")

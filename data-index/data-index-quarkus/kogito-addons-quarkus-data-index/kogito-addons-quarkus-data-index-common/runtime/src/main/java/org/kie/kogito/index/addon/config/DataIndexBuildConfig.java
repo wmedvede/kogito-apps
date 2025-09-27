@@ -23,24 +23,15 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
-@ConfigMapping(prefix = "kogito.data-index-build")
+@ConfigMapping(prefix = "kogito.data-index.build")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface DataIndexBuildConfig {
 
     /**
-     * If GraphQL UI should be enabled. By default, this is only included when the application is running in dev mode.
-     */
-    @WithName("graphql.ui.always-include")
-    @WithDefault("false")
-    boolean graphqlUiAlwaysInclude();
-
-    /**
      * Configures whether to use Reactive or Blocking behaviour for the RouterProducer and EventConsumer components.
-     * If the property is set, and has the value true, blocking behaviour is configured, and the BlockingGraphqlRouterProducer
-     * and BlockingMessagingEventConsumer are used.
+     * If the property is set, and has the value true, blocking behaviour is configured, and the
+     * BlockingGraphqlRouterProducer and BlockingMessagingEventConsumer are used.
      * In any other case, the ReactiveGraphqlRouterProducer and ReactiveMessagingEventConsumer are used.
      */
     Optional<Boolean> blocking();

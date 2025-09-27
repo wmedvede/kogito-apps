@@ -30,7 +30,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-@IfBuildProperty(name = "kogito.data-index-build.graphql.ui.always-include", stringValue = "true")
+@IfBuildProperty(name = "quarkus.kogito.data-index.graphql.ui.always-include", stringValue = "true")
 public class VertxGraphiQLSetup {
 
     @Inject

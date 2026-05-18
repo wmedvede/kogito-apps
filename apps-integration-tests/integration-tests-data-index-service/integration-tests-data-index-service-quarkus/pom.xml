@@ -33,21 +33,14 @@
   <name>Kogito Apps :: Integration Tests :: Data Index :: Quarkus</name>
 
   <dependencies>
-    <dependency>
-      <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-with-drools-quarkus</artifactId>
-    </dependency>
+   
     <dependency>
       <groupId>org.kie</groupId>
       <artifactId>kie-addons-quarkus-process-management</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-addons-quarkus-task-management</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.kie</groupId>
-      <artifactId>kie-addons-quarkus-process-svg</artifactId>
+      <groupId>org.apache.kie.sonataflow</groupId>
+      <artifactId>sonataflow-quarkus</artifactId>
     </dependency>
     <dependency>
       <groupId>org.kie</groupId>
@@ -154,7 +147,7 @@
                 <resource>
                   <directory>${project.parent.basedir}/integration-tests-data-index-service-common/src/main/resources</directory>
                   <includes>
-                    <include>**/*.bpmn</include>
+                    <include>**/*.sw.json</include>
                   </includes>
                 </resource>
                 <resource>

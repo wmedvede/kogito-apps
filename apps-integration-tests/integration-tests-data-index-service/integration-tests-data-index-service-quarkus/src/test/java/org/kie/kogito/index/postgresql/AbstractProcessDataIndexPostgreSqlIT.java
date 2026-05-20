@@ -60,8 +60,8 @@ public abstract class AbstractProcessDataIndexPostgreSqlIT extends AbstractProce
                 .when().post("/graphql")
                 .then().statusCode(200)
                 .body("data.ProcessInstances[0].id", containsString(pId))
-                .body("data.ProcessInstances[0].variables.traveller.firstName", containsString("Darth"))
-                .body("data.ProcessInstances[0].state", is("ACTIVE")));
+                .body("data.ProcessInstances[0].variables.result", containsString("Hello"))
+                .body("data.ProcessInstances[0].state", is("COMPLETED")));
     }
 
 }
